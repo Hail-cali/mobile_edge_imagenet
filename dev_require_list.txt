@@ -1,5 +1,0 @@
-matplotilb
-
-scipy
-
-torch
