@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import torch.utils.data as data
+import numpy as np
 
 def unpickle(file, batch_num):
     import pickle
@@ -12,7 +13,7 @@ def unpickle(file, batch_num):
     return dict
 
 def make_dataset( dict):
-    return dict[b'data'].reshape(len(dict[b'data']), 3, 32, 32).transpose(0, 2, 3, 1), dict[b'labels']
+    return dict[b'data'].reshape(len(dict[b'data']), 3, 32, 32).transpose(0, 2, 3, 1), np.array(dict[b'labels'])
 
 def unmat(file):
     from scipy import io
@@ -28,7 +29,8 @@ class ImageDataset(data.Dataset):
 
 
     def make_dataset(self, dict):
-        return dict[b'data'].reshape(len(dict[b'data']), 3, 32, 32).transpose(0, 2, 3, 1), dict[b'labels']
+        return dict[b'data'].reshape(len(dict[b'data']), 3, 32, 32).astype('float32'), np.array(dict[b'labels'])
+        # return dict[b'data'].reshape(len(dict[b'data']), 3, 32, 32).transpose(0, 2, 3, 1), np.array(dict[b'labels'])
 
     def __getitem__(self, index):
         return self.X[index], self.y[index]

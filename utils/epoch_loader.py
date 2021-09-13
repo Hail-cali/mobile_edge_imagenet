@@ -48,7 +48,7 @@ def val_epoch(model, data_loader, criterion, device):
 
             losses.update(loss.item(), data.size(0))
             accuracies.update(acc, data.size(0))
-
+            # print('epoch')
     # show info
     print(
         'Validation set ({:d} samples): Average loss: {:.4f}\tAcc: {:.4f}%'.format(len(data_loader.dataset), losses.avg,
