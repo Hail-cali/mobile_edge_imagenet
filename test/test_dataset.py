@@ -1,4 +1,7 @@
 import matplotlib.pyplot as plt
+from models.lightmobile import LightMobileNet
+from utils.data_loader import ImageDataset
+from utils.data_loader import *
 
 def unpickle(file, batch_num):
     import pickle
@@ -19,13 +22,25 @@ def unmat(file):
     mat_file = io.loadmat(file)
     return mat_file
 
-path = '../dataset/cifar-10-batches-py'
 
-result = unpickle(path, 2)
+
+
+
+dpath='../dataset/cifar-10-batches-py'
+train_size=0.8
+batch_size=30
+
+# result = unpickle(dpath, 2)
+# X, y = make_dataset(result)
+# plt.imshow(X[100])
+# plt.show()
+
+result = unpickle(dpath, 3)
+dataset = ImageDataset(data=result)
+train, val = data.random_split(dataset,
+                                   [int(len(dataset) * train_size), len(dataset) - int(len(dataset) * train_size)])
+
+train_loader = data.DataLoader(train, batch_size=batch_size, shuffle=True)
+val_loader = data.DataLoader(val, batch_size=batch_size, shuffle=True)
 
 print()
-
-X, y = make_dataset(result)
-
-plt.imshow(X[100])
-plt.show()

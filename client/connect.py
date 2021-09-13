@@ -40,7 +40,7 @@ class AsyncClient:
             payload = line.encode()
             writer.write(payload)
             await writer.drain()
-            print(f"[C {self.name}] sent: {len(payload)} bytes\n")
+            # print(f"[C {self.name}] sent: {len(payload)} bytes\n")
 
             data = await reader.read(1024)
             print(f"[C {self.name}] received : {len(data)} bytes")
