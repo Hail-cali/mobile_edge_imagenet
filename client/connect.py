@@ -3,6 +3,9 @@ import asyncio
 from random import random
 import time
 import sys
+from server.set_model import *
+from comunicate.request import *
+
 
 class AsyncClient:
     def __init__(self,
@@ -23,6 +26,12 @@ class AsyncClient:
     async def run_client(self, host: str, port: int):
         reader: asyncio.StreamReader
         writer: asyncio.StreamWriter
+
+        model, loaders, criterion, optimizer, history, model_params, device = set_model(
+            dpath='../dataset/cifar-10-batches-py', file=1,
+            train_size=0.8, batch_size=40)
+        opt = parse_opts()
+
         reader, writer = await asyncio.open_connection(host, port)
 
         print(f"{'=' * 5}")
@@ -54,7 +63,44 @@ class AsyncClient:
         await writer.wait_closed()
 
 
+    async def run_client_model(self, host: str, port: int, opt):
+        reader: asyncio.StreamReader
+        writer: asyncio.StreamWriter
 
+        model, loaders, criterion, optimizer, history, model_params, device = set_model(
+            dpath='../dataset/cifar-10-batches-py', file=1,
+            train_size=0.8, batch_size=40)
+
+
+        reader, writer = await asyncio.open_connection(host, port)
+
+        print(f"{'=' * 5}")
+        print(f"[C {self.name}] connected {'=' * 10}")
+        print(f"{'=' * 5}")
+
+        opt.start_epoch = epoch = 1
+        opt.n_epochs = 2
+
+        while epoch <= opt.n_epochs:
+            # line = sys.stdin.readline().strip()
+            model.load_state_dict(copy.deepcopy(history['params']))
+            history, model_params = one_epoch_train(model, loaders, criterion, optimizer, history, model_params, device)
+
+            data = params_request(history, model_params)
+            writer.write(data)
+            await writer.drain()
+
+            rec = await reader.read(1024)
+            history = rec_data = pickle.loads(rec)
+
+            epoch = history['epoch']
+            print(f"[C {self.name}] received : {len(rec)} bytes")
+
+        print(f"[C {self.name}] closing connection")
+
+        history_plot(history, 'test')
+        writer.close()
+        await writer.wait_closed()
 
 
 
