@@ -86,15 +86,15 @@ class AsyncClient:
             model.load_state_dict(copy.deepcopy(history['params']))
             history, model_params = one_epoch_train(model, loaders, criterion, optimizer, history, model_params, device)
 
-            data = params_request(history, model_params)
-            writer.write(data)
+            send = params_request(history)
+            writer.write(send)
             await writer.drain()
 
-            rec = await reader.read(1024)
-            history = rec_data = pickle.loads(rec)
+            recv = await reader.read(1024)
+            history = rec_data = params_response(recv)
 
             epoch = history['epoch']
-            print(f"[C {self.name}] received : {len(rec)} bytes")
+            print(f"[C {self.name}] received : {len(recv)} bytes")
 
         print(f"[C {self.name}] closing connection")
 
