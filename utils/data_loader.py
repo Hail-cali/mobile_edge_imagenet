@@ -22,9 +22,13 @@ def unmat(file):
 
 class ImageDataset(data.Dataset):
 
-    def __init__(self, data):
+    def __init__(self, data, test_mode=False):
         super(ImageDataset, self).__init__()
-        self.X, self.y = self.make_dataset(data)
+        if not test_mode:
+            self.X, self.y = self.make_dataset(data)
+        else:
+            self.X, self.y = self.make_dataset(data)
+            self.X, self.y = self.X[:1000], self.y[:1000]
         # self.X_len = self.X.shape[0]
 
 

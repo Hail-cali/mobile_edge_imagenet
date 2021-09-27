@@ -5,12 +5,15 @@ from random import random
 import sys
 from functools import partial
 from server.set_model import *
+from opt import parse_opts
 
+OPT = parse_opts()
 
+# SERVER_PORT = 8080
+# SERVER_HOST = '127.0.0.1'
+SERVER_PORT = OPT.SERVER_PORT
+SERVER_HOST = OPT.SERVER_HOST
 
-
-SERVER_PORT = 8080
-SERVER_HOST = '127.0.0.1'
 
 def handle_stdin(queue):
     data = sys.stdin.readline().strip()
@@ -32,7 +35,9 @@ async def tick(queue):
 
 
 async def queue_handler_model(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
-    model, loaders, criterion, optimizer, history, model_params, device = set_model(
+    model = LightMobileNet(pretrained=True).load()
+
+    loaders, criterion, optimizer, history, model_params, device = set_model(model,
         dpath='../dataset/cifar-10-batches-py', file=3,
         train_size=0.8, batch_size=40)
 
@@ -54,8 +59,8 @@ async def queue_handler_model(reader: asyncio.StreamReader, writer: asyncio.Stre
         await writer.drain()
 
 async def queue_handler(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
-
-    model, loaders, criterion, optimizer, history, model_params, device = set_model(
+    model = LightMobileNet(pretrained=True).load()
+    loaders, criterion, optimizer, history, model_params, device = set_model(model,
         dpath='../dataset/cifar-10-batches-py', file=3,
         train_size=0.8, batch_size=40)
 

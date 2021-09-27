@@ -63,13 +63,17 @@ class AsyncClient:
         await writer.wait_closed()
 
 
-    async def run_client_model(self, host: str, port: int, opt):
+    async def run_client_model(self, host: str, port: int, opt, model):
         reader: asyncio.StreamReader
         writer: asyncio.StreamWriter
 
-        model, loaders, criterion, optimizer, history, model_params, device = set_model(
-            dpath='../dataset/cifar-10-batches-py', file=1,
-            train_size=0.8, batch_size=40)
+        loaders, criterion, optimizer, history, model_params, device = set_model(
+            model,
+            dpath='../dataset/cifar-10-batches-py',
+            file=1,
+            train_size=0.8,
+            batch_size=40,
+            testmode=True)
 
 
         reader, writer = await asyncio.open_connection(host, port)
@@ -90,11 +94,17 @@ class AsyncClient:
             writer.write(send)
             await writer.drain()
 
-            recv = await reader.read(1024)
-            history = rec_data = params_response(recv)
+            recv_msg = ''
+            msg_len = len(send) + 10
+            while len(recv_msg) < msg_len:
+                recv_msg += await reader.read(MAX_MSG_SIZE)
+
+            # recv_msg = await reader.read(1024)
+
+            history = params_response(recv_msg)
 
             epoch = history['epoch']
-            print(f"[C {self.name}] received : {len(recv)} bytes")
+            print(f"[C {self.name}] received : {len(recv_msg)} bytes")
 
         print(f"[C {self.name}] closing connection")
 

@@ -15,10 +15,11 @@ CLIENT_HOST = "127.0.0.1"
 
 OPT = parse_opts()
 
-async def single():
+async def single(model):
+
     await asyncio.wait([
                         AsyncClient(name='client_3', host=CLIENT_HOST, port=CLIENT_PORT
-                                    ).run_client_model(CLIENT_HOST, CLIENT_PORT, OPT),
+                                    ).run_client_model(CLIENT_HOST, CLIENT_PORT, OPT, model),
 
                         ])
 
@@ -33,5 +34,6 @@ async def client():
 
 
 if __name__ == '__main__':
-    asyncio.run(single())
+    model = LightMobileNet(pretrained=True).load()
+    asyncio.run(single(model))
     # asyncio.run(client())
