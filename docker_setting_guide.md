@@ -18,6 +18,9 @@
 ### 1)  image download
 <pre><code> docker pull matthewfeickert/docker-python3-ubuntu
 </code></pre>
+<pre><code> docker image name tag matthewfeickert/docker-python3-ubuntu first.hail/ubuntu:20.04
+</code></pre>
+
 ### 2) run image with port forwading
 - port forwading 관련 서버에서 포트 설정과 방화벽 설정이 필요
 - -p [외부 포트]:[도커 내부 포트]
