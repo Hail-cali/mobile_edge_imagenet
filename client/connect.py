@@ -6,6 +6,7 @@ import sys
 from server.set_model import *
 from comunicate.request import *
 
+MAX_MSG_SIZE = 8000
 
 class AsyncClient:
     def __init__(self,
