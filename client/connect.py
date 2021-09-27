@@ -1,9 +1,7 @@
 # client
 import asyncio
-from random import random
-import time
 import sys
-from server.set_model import *
+from models.set_model import *
 from comunicate.request import *
 
 MAX_MSG_SIZE = 8000

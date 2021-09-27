@@ -3,8 +3,7 @@
 import asyncio
 from random import random
 import sys
-from functools import partial
-from server.set_model import *
+from models.set_model import *
 from opt import parse_opts
 
 OPT = parse_opts()
