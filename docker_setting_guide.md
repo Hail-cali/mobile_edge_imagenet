@@ -30,4 +30,15 @@
 </code></pre>
 
 ### 2-1) docker image start & attach
-### 3) 
+<pre><code>docker attach hail
+</code></pre>
+
+### 3) ssh 설치 in docker
+<pre><code>sudo apt update
+sudo apt install openssh-server
+sudo service ssh start
+</code></pre>
+if you want to check ssh status, 
+<pre><code>service ssh status
+</code></pre>
+
