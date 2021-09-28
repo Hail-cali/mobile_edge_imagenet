@@ -1,16 +1,26 @@
-import torch
-from opt import parse_opts
-from utils.data_loader import *
-import os
 from models.lightmobile import *
+
 import torch.optim as optim
-from utils.epoch_loader import  *
+
+from utils.data_loader import *
+from utils.epoch_loader import *
+
 import copy
-from utils.make_plot import *
 
-opt = parse_opts()
 
-def set_model(model, dpath='../dataset/cifar-10-batches-py',file=3, train_size=0.8, batch_size=40, testmode=False):
+def load_model(opt):
+    if opt.model == 'mobilenet':
+        model = LightMobileNet(pretrained=opt.pretrained).load()
+
+    else:
+        model = None
+        print(f'check opt model, invalid model name {opt.model} \n | capable opt is | mobilenet |')
+
+    return model
+
+
+
+def set_model(model, opt, dpath='../dataset/cifar-10-batches-py',file=3, train_size=0.8, batch_size=40, testmode=False):
 
 
     device = torch.device(f"cuda:{opt.gpu}" if opt.use_cuda else "cpu")
@@ -44,7 +54,7 @@ def set_model(model, dpath='../dataset/cifar-10-batches-py',file=3, train_size=0
     return (train_loader, val_loader),  criterion, optimizer, history, model_params, device
 
 
-def one_epoch_train(model, loaders, criterion, optimizer, history, model_params, device):
+def one_epoch_train(model, loaders, criterion, optimizer, history, model_params, opt, device):
 
     train_loader, val_loader = loaders
 
@@ -65,31 +75,37 @@ def one_epoch_train(model, loaders, criterion, optimizer, history, model_params,
 
 
 
-def full_epoch_train(model, loaders, criterion, optimizer, history, model_params, device):
-
-
-    train_loader, val_loader = loaders
-
-    for epoch in range(opt.start_epoch, opt.n_epochs + 1):
-
-        train_loss, train_acc = train_epoch(model, train_loader, criterion, optimizer, epoch, opt.log_interval, device)
-        history['train_los'].append(train_loss), history['train_acc'].append(train_acc)
-
-        val_loss, val_acc = val_epoch(model, val_loader, criterion, device)
-        history['val_los'].append(val_loss), history['val_acc'].append(val_acc)
-        history['params'] = copy.deepcopy(model.state_dict())
-
-        if val_loss < model_params['best_loss']:
-            model_params['best_loss'] = val_loss
-            model_params['best_params'] = copy.deepcopy(model.state_dict())
-
-    return history, model_params
+# def full_epoch_train(model, loaders, criterion, optimizer, history, model_params, device):
+#
+#
+#     train_loader, val_loader = loaders
+#
+#     for epoch in range(OPT.start_epoch, OPT.n_epochs + 1):
+#
+#         train_loss, train_acc = train_epoch(model, train_loader, criterion, optimizer, epoch, opt.log_interval, device)
+#         history['train_los'].append(train_loss), history['train_acc'].append(train_acc)
+#
+#         val_loss, val_acc = val_epoch(model, val_loader, criterion, device)
+#         history['val_los'].append(val_loss), history['val_acc'].append(val_acc)
+#         history['params'] = copy.deepcopy(model.state_dict())
+#
+#         if val_loss < model_params['best_loss']:
+#             model_params['best_loss'] = val_loss
+#             model_params['best_params'] = copy.deepcopy(model.state_dict())
+#
+#     return history, model_params
 
 
 if __name__=='__main__':
-    model = LightMobileNet().load()
+
+    from opt import parse_opts
+    opt = parse_opts()
+
+    model = load_model(opt)
+
     loaders, criterion, optimizer, history, model_params, device = set_model(
         model,
+        opt,
         dpath='../dataset/cifar-10-batches-py',
         file=1,
         train_size=0.8,

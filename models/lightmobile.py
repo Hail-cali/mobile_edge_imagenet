@@ -4,8 +4,6 @@ from torch import nn, Tensor
 from torchvision.models.mobilenet import mobilenet_v3_small, mobilenet_v2
 
 
-
-
 class LightMobileNet(nn.Module):
 
     def __init__(self, pretrained=True, input_size=32, num_class=100):

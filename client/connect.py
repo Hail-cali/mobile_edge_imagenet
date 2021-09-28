@@ -1,8 +1,10 @@
-# client
+# client connect
+
 import asyncio
 import sys
 from models.set_model import *
 from comunicate.request import *
+from utils.make_plot import history_plot
 
 MAX_MSG_SIZE = 8000
 
@@ -22,44 +24,44 @@ class AsyncClient:
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         pass
 
-    async def run_client(self, host: str, port: int):
-        reader: asyncio.StreamReader
-        writer: asyncio.StreamWriter
-
-        model, loaders, criterion, optimizer, history, model_params, device = set_model(
-            dpath='../dataset/cifar-10-batches-py', file=1,
-            train_size=0.8, batch_size=40)
-        opt = parse_opts()
-
-        reader, writer = await asyncio.open_connection(host, port)
-
-        print(f"{'=' * 5}")
-        print(f"[C {self.name}] connected {'=' * 10}")
-        print(f"{'=' * 5}")
-
-
-
-        while True:
-            # line = sys.stdin.readline().strip()
-            line = f"{self.name}@:"+input(f"[C {self.name}] enter message: ")
-            if not line:
-                break
-
-            payload = line.encode()
-            writer.write(payload)
-            await writer.drain()
-            # print(f"[C {self.name}] sent: {len(payload)} bytes\n")
-
-            data = await reader.read(1024)
-            print(f"[C {self.name}] received : {len(data)} bytes")
-            print(f"[C {self.name}] message : {data.decode()} ")
-
-            if line[len(self.name)+2:] == 'exit':
-                break
-
-        print(f"[C {self.name}] closing connection")
-        writer.close()
-        await writer.wait_closed()
+    # async def run_client(self, host: str, port: int):
+    #     reader: asyncio.StreamReader
+    #     writer: asyncio.StreamWriter
+    #
+    #     model, loaders, criterion, optimizer, history, model_params, device = set_model(
+    #         dpath='../dataset/cifar-10-batches-py', file=1,
+    #         train_size=0.8, batch_size=40)
+    #     opt = parse_opts()
+    #
+    #     reader, writer = await asyncio.open_connection(host, port)
+    #
+    #     print(f"{'=' * 5}")
+    #     print(f"[C {self.name}] connected {'=' * 10}")
+    #     print(f"{'=' * 5}")
+    #
+    #
+    #
+    #     while True:
+    #         # line = sys.stdin.readline().strip()
+    #         line = f"{self.name}@:"+input(f"[C {self.name}] enter message: ")
+    #         if not line:
+    #             break
+    #
+    #         payload = line.encode()
+    #         writer.write(payload)
+    #         await writer.drain()
+    #         # print(f"[C {self.name}] sent: {len(payload)} bytes\n")
+    #         print('here')
+    #         data = await reader.read(1024)
+    #         print(f"[C {self.name}] received : {len(data)} bytes")
+    #         print(f"[C {self.name}] message : {data.decode()} ")
+    #
+    #         if line[len(self.name)+2:] == 'exit':
+    #             break
+    #
+    #     print(f"[C {self.name}] closing connection")
+    #     writer.close()
+    #     await writer.wait_closed()
 
 
     async def run_client_model(self, host: str, port: int, opt, model):
@@ -68,6 +70,7 @@ class AsyncClient:
 
         loaders, criterion, optimizer, history, model_params, device = set_model(
             model,
+            opt,
             dpath='../dataset/cifar-10-batches-py',
             file=1,
             train_size=0.8,
@@ -87,19 +90,22 @@ class AsyncClient:
         while epoch <= opt.n_epochs:
             # line = sys.stdin.readline().strip()
             model.load_state_dict(copy.deepcopy(history['params']))
-            history, model_params = one_epoch_train(model, loaders, criterion, optimizer, history, model_params, device)
+            history, model_params = one_epoch_train(model, loaders, criterion, optimizer,
+                                                    history, model_params, opt, device)
 
-            send = params_request(history)
+            send = params_request(history).encode()
+            print('here 1 ')
             writer.write(send)
             await writer.drain()
+            print('here 2 ')
 
-            recv_msg = ''
-            msg_len = len(send) + 10
-            while len(recv_msg) < msg_len:
-                recv_msg += await reader.read(MAX_MSG_SIZE)
+            # recv_msg = ''
+            # msg_len = len(send) + 10
+            # while len(recv_msg) < msg_len:
+            #     recv_msg += await reader.read(MAX_MSG_SIZE)
 
-            # recv_msg = await reader.read(1024)
-
+            recv_msg = await reader.read(1024)
+            print(recv_msg)
             history = params_response(recv_msg)
 
             epoch = history['epoch']
@@ -114,31 +120,31 @@ class AsyncClient:
 
 
 
-
-async def run_client(name: str , host: str, port: int):
-    reader: asyncio.StreamReader
-    writer: asyncio.StreamWriter
-    reader, writer = await asyncio.open_connection(host, port)
-    print(f"{'='*5}")
-    print(f"[C {name}] connected {'='*10}")
-    print(f"{'=' * 5}")
-
-    while True:
-        line = sys.stdin.readline().strip()
-        # line = input(f"[C {name}] enter message: ")
-        if not line:
-            break
-
-        payload = line.encode()
-        writer.write(payload)
-        await writer.drain()
-        print(f"[C {name}] sent: {len(payload)} bytes\n")
-
-
-        data = await reader.read(1024)
-        print(f"[C {name}] received : {len(data)} bytes")
-        print(f"[C {name}] message : {data.decode()} ")
-
-    print(f"[C {name}] closing connection")
-    writer.close()
-    await writer.wait_closed()
+#
+# async def run_client(name: str , host: str, port: int):
+#     reader: asyncio.StreamReader
+#     writer: asyncio.StreamWriter
+#     reader, writer = await asyncio.open_connection(host, port)
+#     print(f"{'='*5}")
+#     print(f"[C {name}] connected {'='*10}")
+#     print(f"{'=' * 5}")
+#
+#     while True:
+#         line = sys.stdin.readline().strip()
+#         # line = input(f"[C {name}] enter message: ")
+#         if not line:
+#             break
+#
+#         payload = line.encode()
+#         writer.write(payload)
+#         await writer.drain()
+#         print(f"[C {name}] sent: {len(payload)} bytes\n")
+#
+#
+#         data = await reader.read(1024)
+#         print(f"[C {name}] received : {len(data)} bytes")
+#         print(f"[C {name}] message : {data.decode()} ")
+#
+#     print(f"[C {name}] closing connection")
+#     writer.close()
+#     await writer.wait_closed()

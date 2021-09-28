@@ -2,20 +2,27 @@ import argparse
 
 def parse_opts():
     parser = argparse.ArgumentParser()
+
     parser.add_argument('--dataset', type=str,
                         default='uf101', help='dataset type')
-    parser.add_argument('--SERVER_PORT', tpye=int,
-                        default=80)
+
+    parser.add_argument('--SERVER_PORT', type=int,
+                        default=8080)
 
     parser.add_argument('--SERVER_HOST',type=str,
-                        default='128.0.0.1')
+                        default='127.0.0.1')
+
+    parser.add_argument('--CLIENT_PORT', type=int,
+                        default=8080)
+
+    parser.add_argument('--CLIENT_HOST', type=str,
+                        default='127.0.0.1')
 
     parser.add_argument(
         '--root_path',
         default='/root/data/edge',
         type=str,
         help='Root directory path of data')
-
 
     parser.add_argument(
         '--gpu',
@@ -40,6 +47,11 @@ def parse_opts():
         type=str,
         help=
         'mobilenet')
+
+    parser.add_argument(
+        '--pretrained',
+        default=True,
+        type=bool)
 
     parser.add_argument(
         '--n_classes',

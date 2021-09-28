@@ -7,10 +7,10 @@ sys.path.append(WORKING_DIR_AND_PYTHON_PATHS)
 # print(f'after {sys.path}')
 
 from server.connect import *
-# from client.connect import *
 
-async def server():
-    await asyncio.wait([run_server()])
+
+# async def server():
+#     await asyncio.wait([run_server()])
 
 async def pipe():
     await asyncio.wait([run_pipe()])
