@@ -5,6 +5,8 @@ import sys
 from models.set_model import *
 from comunicate.request import *
 from utils.make_plot import history_plot
+from random import random
+
 
 MAX_MSG_SIZE = 8000
 
@@ -68,6 +70,7 @@ class AsyncClient:
         reader: asyncio.StreamReader
         writer: asyncio.StreamWriter
 
+
         loaders, criterion, optimizer, history, model_params, device = set_model(
             model,
             opt,
@@ -80,9 +83,11 @@ class AsyncClient:
 
         reader, writer = await asyncio.open_connection(host, port)
 
-        print(f"{'=' * 5}")
-        print(f"[C {self.name}] connected {'=' * 10}")
-        print(f"{'=' * 5}")
+
+
+        print(f"{'=' * 15}")
+        print(f"[C {self.name}] connected ")
+        print(f"{'=' * 15}")
 
         opt.start_epoch = epoch = 1
         opt.n_epochs = 2
@@ -93,27 +98,21 @@ class AsyncClient:
             history, model_params = one_epoch_train(model, loaders, criterion, optimizer,
                                                     history, model_params, opt, device)
 
-            send = params_request(history).encode()
-            print('here 1 ')
-            writer.write(send)
-            await writer.drain()
-            print('here 2 ')
+            packed = pack_params(history)
 
-            # recv_msg = ''
-            # msg_len = len(send) + 10
-            # while len(recv_msg) < msg_len:
-            #     recv_msg += await reader.read(MAX_MSG_SIZE)
-
-            recv_msg = await reader.read(1024)
-            print(recv_msg)
-            history = params_response(recv_msg)
-
-            epoch = history['epoch']
+            await send_signal(writer, self.name, packed)
+            await asyncio.sleep(random() * 2)
+            await send_stream(writer, self.name, packed)
+            recv_msg = await reader.read(MAX_MSG_SIZE)
             print(f"[C {self.name}] received : {len(recv_msg)} bytes")
+
+            # history = params_response(recv_msg)
+            # epoch = history['epoch']
 
         print(f"[C {self.name}] closing connection")
 
-        history_plot(history, 'test')
+        # history_plot(history, 'test')
+
         writer.close()
         await writer.wait_closed()
 
