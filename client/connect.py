@@ -1,11 +1,11 @@
 # client connect
 
 import asyncio
-import sys
+
 from models.set_model import *
 from comunicate.request import *
-from utils.make_plot import history_plot
 from random import random
+# from utils.make_plot import history_plot
 
 
 MAX_MSG_SIZE = 8000
@@ -67,9 +67,9 @@ class AsyncClient:
 
 
     async def run_client_model(self, host: str, port: int, opt, model):
-        reader: asyncio.StreamReader
+        reader: asyncio.StreamReader #-> In_stream: asyncio.StreamReaderProtocol
         writer: asyncio.StreamWriter
-
+        queue: asyncio.Queue
 
         loaders, criterion, optimizer, history, model_params, device = set_model(
             model,
@@ -100,8 +100,8 @@ class AsyncClient:
 
             packed = pack_params(history)
 
-            await send_signal(writer, self.name, packed)
-            await asyncio.sleep(random() * 2)
+            # await send_signal(writer, self.name, packed)
+            # await asyncio.sleep(random() * 2)
             await send_stream(writer, self.name, packed)
             recv_msg = await reader.read(MAX_MSG_SIZE)
             print(f"[C {self.name}] received : {len(recv_msg)} bytes")

@@ -1,15 +1,8 @@
 #run_client
 
 import asyncio
-import os
-import sys
-WORKING_DIR_AND_PYTHON_PATHS = os.path.join('/', *os.getcwd().split("/")[:-1])
-# print(f'before {sys.path}')
-sys.path.append(WORKING_DIR_AND_PYTHON_PATHS)
-# print(f'after {sys.path}')
-
-from client.connect import *
 from opt import parse_opts
+from client import *
 
 OPT = parse_opts()
 

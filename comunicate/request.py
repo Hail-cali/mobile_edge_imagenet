@@ -36,10 +36,10 @@ class TorchEncoder(json.JSONEncoder):
         return json.JSONEncoder.default(self, obj)
 
 def pack_params(history):
-    return json.dumps(history, cls=TorchEncoder).encode()
+    return (json.dumps(history, cls=TorchEncoder)+'\n').encode()
 
 def unpack_params(send):
-    return json.loads(send.decode())
+    return json.loads(send[:-1].decode())
 
 def msg_recv(mes):
     return json.loads(mes.decode())

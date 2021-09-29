@@ -1,11 +1,14 @@
 # server
 
 import asyncio
+from collections import defaultdict
 from random import random
 import sys
 from models.set_model import *
 from opt import parse_opts
 from comunicate.request import *
+
+
 
 OPT = parse_opts()
 
@@ -14,84 +17,27 @@ OPT = parse_opts()
 SERVER_PORT = OPT.SERVER_PORT
 SERVER_HOST = OPT.SERVER_HOST
 
+async def write_sream(reader, user_queue):
 
-# def handle_stdin(queue):
-#     data = sys.stdin.readline().strip()
-#     if data =='q':
-#         loop = asyncio.get_event_loop()
-#         loop.remove_reader(sys.stdin)
-#     asyncio.ensure_future(queue.put(data))
-#
-# async def tick(queue):
-#     stop = False
-#     while not stop:
-#
-#         data = await queue.get()
-#         print(f'Data received: {data}')
-#
-#         if data == 'q':
-#             stop =True
-#         print('tick finished')
-#
+    data: bytes
 
+    while True:
+        packet = await reader.read(10000)
+        user_queue.put_nowait(packet)
+        if packet.endswith(b'\n'):
+            print(packet[-10:])
 
+            break
 
-# async def queue_handler(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
-#     model = LightMobileNet(pretrained=True).load()
-#     loaders, criterion, optimizer, history, model_params, device = set_model(model,
-#         dpath='../dataset/cifar-10-batches-py', file=3,
-#         train_size=0.8, batch_size=40)
-#
-#     queue = asyncio.Queue()
-#     userqueue = ''
-#
-#     while True:
-#
-#         data: bytes = await reader.read(1024)
-#
-#         peername = writer.get_extra_info('peername')
-#
-#         print(f'[S] received {len(data)} bytes from {peername}')
-#         mes = data.decode()
-#         print(f'[S] message: {mes}')
-#         res = mes.upper().split('@:')[-1]
-#
-#         await asyncio.sleep(random() * 2)
-#         writer.write(res.encode())
-#         await writer.drain()
-#
-#
-#
-# async def handler(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
-#     print(f'[S] server handler ')
-#     mes = 'start'
-#     while True:
-#
-#         data: bytes = await reader.read(1024)
-#
-#         peername = writer.get_extra_info('peername')
-#
-#         print(f'[S] received {len(data)} bytes from {peername}')
-#         mes = data.decode()
-#         print(f'[S] message: {mes[:10]}')
-#         res = mes.upper()[::-1]
-#
-#         await asyncio.sleep(random() * 2)
-#         writer.write(res.encode())
-#         await writer.drain()
-#         if mes == 'exit':
-#             pass
-#
+    print(f'final queue sie in stream: {user_queue.qsize()}')
 
+async def process_stream(user_queue):
+    # without using send_signal -> msg_size
+    params: bytes = b''
+    while not user_queue.empty():
+        params += user_queue.get_nowait()
 
-# async def run_server():
-#
-#     server = await asyncio.start_server(handler, host=SERVER_HOST, port=SERVER_PORT)
-#     addr = server.sockets[0].getsockname()
-#     print(f'SERVING ON {addr}')
-#     async with server:
-#         await server.serve_forever()
-#     # asyncio.get_event_loop().run_until_complete()
+    return unpack_params(params)
 
 async def run_pipe():
 
@@ -107,8 +53,9 @@ async def run_pipe():
 
     async def queue_handler_model(reader: asyncio.StreamReader, writer: asyncio.StreamWriter, ):
 
-        queue = asyncio.Queue()
-        userqueue = ''
+
+
+        # hashqueue = defaultdict(asyncio.Queue)
 
         while True:
 
@@ -116,6 +63,7 @@ async def run_pipe():
 
             peername = writer.get_extra_info('peername')
             print(f'[S] received {len(data)} bytes from {peername}')
+            # hashqueue[peername].put_nowait(data)
 
             recv = msg_recv(data)
 
@@ -138,9 +86,28 @@ async def run_pipe():
             await asyncio.sleep(random() * 2)
             writer.write(req)
             await writer.drain()
+    async def stream_handler(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
+
+        hashqueue = defaultdict(asyncio.Queue)
+
+        while True:
+
+            client = writer.get_extra_info('peername')
+
+            await write_sream(reader, hashqueue[client])
+            params: dict = await process_stream(hashqueue[client])
+            print(params.keys())
+
+            await asyncio.sleep(random() * 2)
+            packed = pack_params(params)
+            await send_stream(writer, '[S]', packed)
 
 
-    server = await asyncio.start_server(queue_handler_model, host=SERVER_HOST, port=SERVER_PORT)
+
+
+    # server = await asyncio.start_server(queue_handler_model, host=SERVER_HOST, port=SERVER_PORT)
+    server = await asyncio.start_server(stream_handler, host=SERVER_HOST, port=SERVER_PORT)
+
     addr = server.sockets[0].getsockname()
 
     print(f"{'=' * 15}")

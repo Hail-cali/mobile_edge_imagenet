@@ -54,6 +54,11 @@ def parse_opts():
         type=bool)
 
     parser.add_argument(
+        '--testmode',
+        default=True,
+        type=bool)
+
+    parser.add_argument(
         '--n_classes',
         default=400,
         type=int,
