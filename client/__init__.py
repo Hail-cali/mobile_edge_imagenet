@@ -6,7 +6,6 @@ sys.path.append(WORKING_DIR_AND_PYTHON_PATHS)
 # print(f'after {sys.path}')
 
 
-from utils.make_plot import history_plot
 from client.connect import *
 
 # check

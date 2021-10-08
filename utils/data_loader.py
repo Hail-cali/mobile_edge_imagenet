@@ -28,7 +28,7 @@ class ImageDataset(data.Dataset):
             self.X, self.y = self.make_dataset(data)
         else:
             self.X, self.y = self.make_dataset(data)
-            self.X, self.y = self.X[:1000], self.y[:1000]
+            self.X, self.y = self.X[:400], self.y[:400]
         # self.X_len = self.X.shape[0]
 
 
