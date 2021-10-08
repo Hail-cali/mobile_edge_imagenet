@@ -22,6 +22,14 @@ def load_model(opt):
 
 def set_model(model, opt, dpath='../dataset/cifar-10-batches-py',file=3, train_size=0.8, batch_size=40, testmode=False):
 
+    history: defaultdict
+    history_params: torch.Tensor
+    history_epoch: int
+    history_train_los: list
+    history_train_acc: list
+    history_train_los: list
+    history_train_acc: list
+
 
     device = torch.device(f"cuda:{opt.gpu}" if opt.use_cuda else "cpu")
     print(device, 'use')

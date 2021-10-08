@@ -17,27 +17,7 @@ OPT = parse_opts()
 SERVER_PORT = OPT.SERVER_PORT
 SERVER_HOST = OPT.SERVER_HOST
 
-async def write_sream(reader, user_queue):
 
-    data: bytes
-
-    while True:
-        packet = await reader.read(10000)
-        user_queue.put_nowait(packet)
-        if packet.endswith(b'\n'):
-            print(packet[-10:])
-
-            break
-
-    print(f'final queue sie in stream: {user_queue.qsize()}')
-
-async def process_stream(user_queue):
-    # without using send_signal -> msg_size
-    params: bytes = b''
-    while not user_queue.empty():
-        params += user_queue.get_nowait()
-
-    return unpack_params(params)
 
 async def run_pipe():
 
@@ -89,20 +69,20 @@ async def run_pipe():
     async def stream_handler(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
 
         hashqueue = defaultdict(asyncio.Queue)
+        client = writer.get_extra_info('peername')
+        print(f'[C: {client}] Conneted')
 
         while True:
 
             client = writer.get_extra_info('peername')
 
-            await write_sream(reader, hashqueue[client])
+            await read_stream(reader, hashqueue[client])
             params: dict = await process_stream(hashqueue[client])
             print(params.keys())
 
             await asyncio.sleep(random() * 2)
             packed = pack_params(params)
             await send_stream(writer, '[S]', packed)
-
-
 
 
     # server = await asyncio.start_server(queue_handler_model, host=SERVER_HOST, port=SERVER_PORT)
