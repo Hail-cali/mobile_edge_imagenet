@@ -2,14 +2,14 @@ import json
 import torch
 import collections
 import queue
-
+import utils.debug
 
 MAX_MSG_SIZE = 8000
 
 async def read_stream(reader, user_queue):
     # read data from stream(reader)
     # write data to pipeline(queue)
-    print(f'check is queue empty {user_queue.qsize()}')
+    print(f'check is queue empty {user_queue.qsize()==0}', end=' ')
     data: bytes
 
     while True:
@@ -23,12 +23,13 @@ async def read_stream(reader, user_queue):
 
 async def process_stream(user_queue):
     # without using send_signal -> msg_size
+    print('proces_stream')
     params: bytes = b''
     while not user_queue.empty():
         params += user_queue.get_nowait()
 
-    result = unpack_params_torch(params)
-    # conv_history(result)
+    decoded = unpack_params(params)
+    result = to_torch_params(decoded)
 
     print(f'-> read & process stream')
     return result
@@ -38,25 +39,6 @@ async def send_stream(writer, who, params):
     writer.write(params)
     await writer.drain()
     print(f'-> {who} send stream')
-
-
-# async def send_signal(writer, who, packed):
-#     print(f'is in signal first?')
-#
-#     msg = {f'{who}': {f'size': len(packed)}}
-#     # msg_size = f'{client}@size@:{len(send)}'.encode()
-#     writer.write(json.dumps(msg).encode())
-#     await writer.drain()
-#
-#
-# async def read_stream(reader, msg_size):
-#
-#     recv_msg: bytes = b''
-#
-#     while len(recv_msg) < msg_size:
-#         recv_msg += await reader.read(MAX_MSG_SIZE)
-#
-#     return recv_msg
 
 
 class TorchEncoder(json.JSONEncoder):
@@ -84,13 +66,34 @@ class TorchDecoder(json.JSONDecoder):
         return obj
 
 def pack_params(history):
+    utils.debug.debug_comm(history, 'pack_phrase')
     return (json.dumps(history, cls=TorchEncoder)+'\n').encode()
 
 def unpack_params_torch(params):
     return json.loads(params[:-1].decode(), cls=TorchDecoder)
 
 def unpack_params(send):
+    utils.debug.debug_comm(send, 'unpack_phrase')
     return json.loads(send[:-1].decode())
+
+def _to_torch(his):
+    utils.debug.debug_comm(his, 'to_torch_phrase')
+    params = collections.OrderedDict()
+    for k, v in his['params'].items():
+        params[k] = torch.Tensor(v)
+    return params
+
+def to_torch_params(his):
+    his['params'] = _to_torch(his)
+    return his
+
+
+
+
+
+
+
+
 
 
 

@@ -8,7 +8,7 @@ from models.set_model import *
 from opt import parse_opts
 from comunicate.request import *
 
-
+import utils.debug
 
 OPT = parse_opts()
 
@@ -78,10 +78,15 @@ async def run_pipe():
 
             await read_stream(reader, hashqueue[client])
             params: dict = await process_stream(hashqueue[client])
-            print(params.keys())
+            history = params
+
+            model.load_state_dict(copy.deepcopy(history['params']), strict=False)
+            history['params'] = copy.deepcopy(model.state_dict())
+
+            utils.debug.debug_history(history, 'server after read')
 
             await asyncio.sleep(random() * 2)
-            packed = pack_params(params)
+            packed = pack_params(history)
             await send_stream(writer, '[S]', packed)
 
 

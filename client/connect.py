@@ -6,6 +6,7 @@ from models.set_model import *
 from comunicate.request import *
 from utils.make_plot import history_plot
 
+import utils.debug
 
 MAX_MSG_SIZE = 8000
 
@@ -30,6 +31,9 @@ class AsyncClient:
         writer: asyncio.StreamWriter
         queue: asyncio.Queue
 
+        history: dict
+
+
         loaders, criterion, optimizer, history, model_params, device = set_model(
             model,
             opt,
@@ -51,16 +55,16 @@ class AsyncClient:
 
         while epoch <= opt.n_epochs:
 
-            model.load_state_dict(copy.deepcopy(history['params']))
+            utils.debug.debug_history(history, 'client start')
+
+            model.load_state_dict(copy.deepcopy(history['params']), strict=False)
+
             history, model_params = one_epoch_train(model, loaders, criterion, optimizer,
                                                     history, model_params, opt, device)
 
-            print(history.keys())
-            print(history['params'].keys())
+
             packed = pack_params(history)
 
-            # await send_signal(writer, self.name, packed)
-            # await asyncio.sleep(random() * 2)
             await send_stream(writer, self.name, packed)
 
             await read_stream(reader, queue)
@@ -68,7 +72,10 @@ class AsyncClient:
 
             history = params
 
+            utils.debug.debug_history(history, 'client after read')
+
             epoch = history['epoch']
+
 
         print(f"[C {self.name}] closing connection")
 

@@ -62,6 +62,12 @@ def set_model(model, opt, dpath='../dataset/cifar-10-batches-py',file=3, train_s
     return (train_loader, val_loader),  criterion, optimizer, history, model_params, device
 
 
+def get_history(model, his):
+    his['params'] = copy.deepcopy(model.state_dict())
+
+    return his
+
+
 def one_epoch_train(model, loaders, criterion, optimizer, history, model_params, opt, device):
 
     train_loader, val_loader = loaders
