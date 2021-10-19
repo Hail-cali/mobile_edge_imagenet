@@ -4,7 +4,9 @@ import collections
 import queue
 import utils.debug
 
-MAX_MSG_SIZE = 8000
+# max msg size is differ from server's spec & communication
+# it is recommended to set
+MAX_MSG_SIZE = 5000
 
 async def read_stream(reader, user_queue):
     # read data from stream(reader)
@@ -19,15 +21,16 @@ async def read_stream(reader, user_queue):
             # print(packet[-10:])
             break
 
-    print(f'-> write pipeline: {user_queue.qsize()}')
+    print(f'-> write pipeline done : size({user_queue.qsize()})')
 
 async def process_stream(user_queue):
     # without using send_signal -> msg_size
-    print('proces_stream')
+    print('process_stream', end=' ')
     params: bytes = b''
     while not user_queue.empty():
         params += user_queue.get_nowait()
 
+    # result = unpack_params_torch(params)
     decoded = unpack_params(params)
     result = to_torch_params(decoded)
 
@@ -78,14 +81,18 @@ def unpack_params(send):
 
 def _to_torch(his):
     utils.debug.debug_comm(his, 'to_torch_phrase')
-    params = collections.OrderedDict()
+    # params = collections.OrderedDict()
+    params = dict()
     for k, v in his['params'].items():
-        params[k] = torch.Tensor(v)
+
+        params[k] = torch.tensor(v)
+
     return params
 
 def to_torch_params(his):
-    his['params'] = _to_torch(his)
-    return his
+    history = his
+    history['params'] = _to_torch(his)
+    return history
 
 
 
