@@ -6,14 +6,14 @@ def debug_history(his, where):
     where: str
     his: dict
 
-    print(f"\n{'-'*10}debug phrase in {where} {'-'*10}")
+    print(f"\n{'-'*10}iter|[{his['epoch']}]debug phrase in {where} {'-'*10}")
     print(f'history total {his.keys()}')
 
     print(f'params status', end=' ')
     print(len(his['params'].keys()))
     params_list = list(his['params'].keys())
     print(his['params'][params_list[-1]].shape)
-    print(his['params'][params_list[-1]][-1])
+    print(params_list[-1], his['params'][params_list[-1]][-1])
     print(type(his['params']))
     print(his['params']['features.0.0.weight'].shape, end='\n')
 
@@ -28,7 +28,9 @@ def debug_comm(msg, where):
     if isinstance(msg, bytes):
         print(f'last msg ', end='')
         print(msg[-5:])
-        print(msg[-1])
+        print(msg[-1:])
+        print(msg[-2:])
+        print(msg[-3:-1])
 
     elif isinstance(msg, dict):
         pass

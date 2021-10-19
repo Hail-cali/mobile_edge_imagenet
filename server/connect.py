@@ -29,7 +29,7 @@ async def run_pipe():
         dpath='../dataset/cifar-10-batches-py', file=3,
         train_size=0.8,
         batch_size=40,
-        testmode=True)
+        testmode=OPT.testmode)
 
     async def queue_handler_model(reader: asyncio.StreamReader, writer: asyncio.StreamWriter, ):
 
@@ -71,6 +71,8 @@ async def run_pipe():
         hashqueue = defaultdict(asyncio.Queue)
         client = writer.get_extra_info('peername')
         print(f'[C: {client}] Conneted')
+        if OPT.testmode:
+            print(f'run test mode with dataset size ')
 
         while True:
 

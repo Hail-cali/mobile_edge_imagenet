@@ -15,10 +15,18 @@ class AsyncClient:
                  name: str,
                  host: str,
                  port: int):
+        '''
+
+        :param name:
+        :param host:
+        :param port:
+        :argument data: Int
+        '''
 
         self.name = name
         self.host = host
         self.port = port
+        self.data = 1
 
     async def __aenter__(self):
         await asyncio.sleep(1.0)
@@ -26,22 +34,22 @@ class AsyncClient:
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         pass
 
-    async def run_client_model(self, host: str, port: int, opt, model):
+    async def run_client_model(self, host: str, port: int, opt, model_input):
         reader: asyncio.StreamReader #-> In_stream: asyncio.StreamReaderProtocol
         writer: asyncio.StreamWriter
         queue: asyncio.Queue
 
         history: dict
-
+        model = model_input
 
         loaders, criterion, optimizer, history, model_params, device = set_model(
             model,
             opt,
             dpath='../dataset/cifar-10-batches-py',
-            file=1,
+            file=self.data,
             train_size=0.8,
             batch_size=40,
-            testmode=True)
+            testmode=opt.testmode)
 
         reader, writer = await asyncio.open_connection(host, port)
         queue = asyncio.Queue()
@@ -50,14 +58,16 @@ class AsyncClient:
         print(f"[C {self.name}] connected ")
         print(f"{'=' * 15}")
 
-        opt.start_epoch = epoch = 1
+        opt.start_epoch = epoch = 0
         opt.n_epochs = 2
 
         while epoch <= opt.n_epochs:
-
-            utils.debug.debug_history(history, 'client start')
-
-            model.load_state_dict(copy.deepcopy(history['params']), strict=False)
+            if epoch == 0:
+                utils.debug.debug_history(history, f'client {epoch}_start')
+                model.load_state_dict(copy.deepcopy(history['params']), strict=False)
+            else:
+                model.load_state_dict(copy.deepcopy(history['params']), strict=False)
+                # model.state_dict().update(history['params'])
 
             history, model_params = one_epoch_train(model, loaders, criterion, optimizer,
                                                     history, model_params, opt, device)

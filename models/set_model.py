@@ -18,7 +18,31 @@ def load_model(opt):
 
     return model
 
+def set_dataset(opt, dpath='../dataset/cifar-10-batches-py',file=5, train_size=0.9, batch_size=40,testmode=False):
 
+    '''
+
+    :param opt: argparse :
+    :param dpath: Str : data path in server
+    :param file: Int : data file number
+    :param train_size: Int :
+    :param batch_size: Int : batch
+    :param testmode: Bool : test setting
+    :return: data loader
+    '''
+
+    result = unpickle(dpath, file)
+
+    dataset = ImageDataset(data=result, test_mode=testmode)
+
+    train, val = data.random_split(dataset,
+                                   [int(len(dataset) * train_size), len(dataset) - int(len(dataset) * train_size)])
+
+    train_loader = data.DataLoader(train, batch_size=batch_size, shuffle=True)
+
+    val_loader = data.DataLoader(val, batch_size=batch_size, shuffle=True)
+
+    return train_loader, val_loader
 
 def set_model(model, opt, dpath='../dataset/cifar-10-batches-py',file=3, train_size=0.8, batch_size=40, testmode=False):
 

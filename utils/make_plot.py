@@ -9,6 +9,12 @@ def history_plot(his, name):
     :param his: [dict,list] (train_acc, train_los, val_acc, val_los)
     :return: None
     """
+    save_dir = 'img'
+
+    import os
+    if not save_dir in os.listdir('../'):
+        os.mkdir('../'+save_dir)
+
 
     plt.plot(range(len(his['val_los'])), his['val_los'], marker='.', c='red', label="Validation-set Loss")
     plt.plot(range(len(his['train_los'])), his['train_los'], marker='.', c='blue', label="Train-set Loss")
@@ -30,7 +36,7 @@ def history_plot(his, name):
     plt.xlabel('epoch')
     plt.ylabel('Acc')
     plt.show()
-    plt.savefig(f"../img/{name}_acc.png")
+    plt.savefig(f"../{save_dir}/{name}_acc.png")
 
 
 
