@@ -17,8 +17,125 @@ OPT = parse_opts()
 SERVER_PORT = OPT.SERVER_PORT
 SERVER_HOST = OPT.SERVER_HOST
 
+class BaseServer:
+
+    def __init__(self,
+                 opt,
+                 name: str,
+                 host: str,
+                 port: int):
+
+        '''
+        :param name:
+        :param host:
+        :param port:
+        :argument data: Int
+        '''
+
+        self.name = name
+        self.host = host
+        self.port = port
+        self.data = 1
+        self.opt = opt
+
+    async def __aenter__(self):
+        await asyncio.sleep(1.0)
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        pass
 
 
+    async def run(self):
+
+        pass
+
+    async def handler(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
+
+        pass
+
+
+class FedServer(BaseServer):
+
+    def __init__(self,
+                 opt,
+                 name: str,
+                 host: str,
+                 port: int):
+
+        '''
+        :param name:
+        :param host:
+        :param port:
+        :argument data: Int
+        '''
+
+        self.name = name
+        self.host = host
+        self.port = port
+        self.data = 1
+        self.opt = opt
+        self.history = dict()
+
+    @property
+    def history(self, new):
+        self.history.update(new)
+
+    @history.getter
+    def history(self):
+        return self.history
+
+    async def run(self):
+
+        model = load_model(OPT)
+
+        loaders, criterion, optimizer, self.history, model_params, device = set_model(
+            model,
+            OPT,
+            dpath='../dataset/cifar-10-batches-py', file=3,
+            train_size=0.8,
+            batch_size=40,
+            testmode=OPT.testmode)
+
+
+        server = await asyncio.start_server(self.handler, host=SERVER_HOST, port=SERVER_PORT)
+
+        addr = server.sockets[0].getsockname()
+
+        print(f"{'=' * 15}PIPE SERVING ON {addr}{'=' * 15}")
+        print(f"{'*' *5}")
+
+        async with server:
+            await server.serve_forever()
+
+
+    async def handler(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
+
+        hashqueue = defaultdict(asyncio.Queue)
+        client = writer.get_extra_info('peername')
+        print(f'[C: {client}] Conneted')
+        if OPT.testmode:
+            print(f'run test mode with dataset size ')
+
+        while True:
+            client = writer.get_extra_info('peername')
+
+            await read_stream(reader, hashqueue[client])
+            params: dict = await process_stream(hashqueue[client])
+            self.history = params
+
+            model.load_state_dict(copy.deepcopy(history['params']), strict=False)
+            history['params'] = copy.deepcopy(model.state_dict())
+
+            utils.debug.debug_history(history, 'server after read')
+
+            await asyncio.sleep(random() * 2)
+            packed = pack_params(history)
+            await send_stream(writer, '[S]', packed)
+
+
+
+
+# func
 async def run_pipe():
 
     model = load_model(OPT)
@@ -31,41 +148,6 @@ async def run_pipe():
         batch_size=40,
         testmode=OPT.testmode)
 
-    async def queue_handler_model(reader: asyncio.StreamReader, writer: asyncio.StreamWriter, ):
-
-
-
-        # hashqueue = defaultdict(asyncio.Queue)
-
-        while True:
-
-            data: bytes = await reader.read(10000)
-
-            peername = writer.get_extra_info('peername')
-            print(f'[S] received {len(data)} bytes from {peername}')
-            # hashqueue[peername].put_nowait(data)
-
-            recv = msg_recv(data)
-
-            try:
-                if recv[list(recv.keys())[0]]['size']:
-                    msg_size = recv[list(recv.keys())[0]]['size']
-                    print(f'server recv msg size {msg_size}')
-                    # await asyncio.sleep(random() * 2)
-                    params: bytes = await read_stream(reader, msg_size)
-                    print(f'parmas byte size : {len(params)}')
-
-                    temp = unpack_params(params)
-                    print(f'temp type {temp.keys()}')
-
-            except:
-                pass
-
-            req = msg_req(recv)
-
-            await asyncio.sleep(random() * 2)
-            writer.write(req)
-            await writer.drain()
     async def stream_handler(reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
 
         hashqueue = defaultdict(asyncio.Queue)

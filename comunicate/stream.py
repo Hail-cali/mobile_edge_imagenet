@@ -21,6 +21,8 @@ class BaseStream:
 
 
         if limit <= 0:
-            raise  ValueError('Limit cannot be <=0')
+            raise ValueError('Limit cannot be <=0')
         if loop is None:
             self._loop = ''
+
+
