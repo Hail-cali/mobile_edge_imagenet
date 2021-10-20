@@ -56,7 +56,9 @@ def set_model(model, opt, dpath='../dataset/cifar-10-batches-py',file=3, train_s
 
 
     device = torch.device(f"cuda:{opt.gpu}" if opt.use_cuda else "cpu")
-    print(device, 'use')
+    print()
+    print(f"{'*'*3} set model.{device}() {'*'*3}")
+
 
     result = unpickle(dpath, file)
 

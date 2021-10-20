@@ -9,8 +9,16 @@ class FedDistill(nn.Module):
         self.h = h
         self.out = out
 
-        self.model = self._struct_student(opt)
+        self.structure = self._struct_student(opt)
         self.data_path = data_path
+
+    def activate(self):
+
+        '''
+        it it base method for frame work training
+        '''
+        pass
+
 
     def _struct_student(self, opt):
         return load_model(opt)
