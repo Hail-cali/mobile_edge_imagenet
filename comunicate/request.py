@@ -34,8 +34,23 @@ async def process_stream(user_queue):
     decoded = unpack_params(params)
     result = to_torch_params(decoded)
 
-    print(f'-> read & process stream')
+    print(f'-> read & process done')
     return result
+
+
+async def stream_decoder(user_queue):
+    # without using send_signal -> msg_size
+    print('process_stream', end=' ')
+    params: bytes = b''
+    while not user_queue.empty():
+        params += user_queue.get_nowait()
+
+    result = unpack_params_torch(params)
+
+    print(f'-> read & process done')
+    return result
+
+
 
 
 async def send_stream(writer, who, params):
@@ -62,7 +77,7 @@ class TorchDecoder(json.JSONDecoder):
 
             if isinstance(list(obj['params'].values())[0], list):
                 for k, v in obj['params'].items():
-                    defalut[k] = torch.Tensor(v)
+                    defalut[k] = torch.tensor(v)
 
                 obj['params'] = defalut
 
@@ -95,15 +110,6 @@ def to_torch_params(his):
     return history
 
 
-
-
-
-
-
-
-
-
-
 def conv_history(his):
 
     if not isinstance(his, dict):
@@ -121,21 +127,4 @@ def conv_history(his):
 def _tolist(obj):
     return obj.cpu().tolist()
 
-# def msg_recv(mes):
-#     return json.loads(mes.decode())
-#
-# def msg_req(mes):
-#     return json.dumps(mes).encode()
-
-
-# def params_request_sub(history, model_params):
-#
-#     if isinstance(history['params'], collections.OrderedDict):
-#         temp = {k: v.cpu().tolist() for k, v in history.pop('params').items()}
-#     else:
-#         temp = history
-#
-#     temp.update(history)
-#     send = json.dumps(temp)
-#     return send
 

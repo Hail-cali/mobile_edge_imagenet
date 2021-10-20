@@ -58,29 +58,32 @@ class AsyncClient:
         print(f"[C {self.name}] connected ")
         print(f"{'=' * 15}")
 
-        opt.start_epoch = epoch = 0
+        opt.start_epoch = epoch = start =0
         opt.n_epochs = 2
 
         while epoch <= opt.n_epochs:
-            if epoch == 0:
+
+            if epoch == start:
                 utils.debug.debug_history(history, f'client {epoch}_start')
                 model.load_state_dict(copy.deepcopy(history['params']), strict=False)
+
             else:
                 model.load_state_dict(copy.deepcopy(history['params']), strict=False)
                 # model.state_dict().update(history['params'])
 
+            # train step
             history, model_params = one_epoch_train(model, loaders, criterion, optimizer,
                                                     history, model_params, opt, device)
 
-
+            #com step
             packed = pack_params(history)
 
             await send_stream(writer, self.name, packed)
 
             await read_stream(reader, queue)
-            params: dict = await process_stream(queue)
-
-            history = params
+            # params: dict = await process_stream(queue)
+            # history = params
+            history = await process_stream(queue)
 
             utils.debug.debug_history(history, 'client after read')
 

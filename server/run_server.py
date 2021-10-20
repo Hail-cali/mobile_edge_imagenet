@@ -6,14 +6,24 @@ WORKING_DIR_AND_PYTHON_PATHS = os.path.join('/', *os.getcwd().split("/")[:-1])
 sys.path.append(WORKING_DIR_AND_PYTHON_PATHS)
 # print(f'after {sys.path}')
 
+from opt import parse_opts
 from server.connect import *
 
+OPT = parse_opts()
 
 
 
-async def pipe():
+async def fedrun():
+
+    await asyncio.wait([
+        FedServer(name='server', opt=OPT).run()
+    ])
+
+async def wrapper_for_run():
+
     await asyncio.wait([run_pipe()])
 
 if __name__ == '__main__':
 
-    asyncio.run(pipe())
+    # asyncio.run(wrapper_for_run())
+    asyncio.run(fedrun())

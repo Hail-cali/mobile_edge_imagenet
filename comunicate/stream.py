@@ -9,6 +9,7 @@ import socket
 import sys
 import warnings
 import weakref
+from asyncio import streams
 
 if hasattr(socket, 'AF_UNIX'):
     __all__ += ('open_unix_connection', 'start_unix_server')
@@ -25,4 +26,8 @@ class BaseStream:
         if loop is None:
             self._loop = ''
 
+class FedStream(streams.StreamReader):
+
+    def __init__(self):
+        super().__init__()
 

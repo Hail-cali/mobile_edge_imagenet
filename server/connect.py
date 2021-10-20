@@ -1,42 +1,43 @@
 # server
 
 import asyncio
-from collections import defaultdict
 from random import random
-import sys
 from models.set_model import *
-from opt import parse_opts
 from comunicate.request import *
 
 import utils.debug
 
-OPT = parse_opts()
+# this is for Version compatibility (func wrapper for server side)
+# if need to use wrapper, change mode to True
 
-# SERVER_PORT = 8080
-# SERVER_HOST = '127.0.0.1'
-SERVER_PORT = OPT.SERVER_PORT
-SERVER_HOST = OPT.SERVER_HOST
+mode = False
+if mode:
+    from opt import parse_opts
+    OPT = parse_opts()
+    SERVER_PORT = OPT.SERVER_PORT
+    SERVER_HOST = OPT.SERVER_HOST
+
 
 class BaseServer:
 
     def __init__(self,
                  opt,
                  name: str,
-                 host: str,
-                 port: int):
+                 ):
 
-        '''
-        :param name:
-        :param host:
-        :param port:
-        :argument data: Int
-        '''
-
-        self.name = name
-        self.host = host
-        self.port = port
-        self.data = 1
         self.opt = opt
+        self.name = name
+        self.host = self.opt.SERVER_HOST
+        self.port = self.opt.SERVER_PORT
+
+        self.user = defaultdict(int)
+
+        self._info: dict = {'state': None, 'terminate': False}
+        self.end = f'if '
+        self.data = 1
+
+        self.model = None
+        self.history = None
 
     async def __aenter__(self):
         await asyncio.sleep(1.0)
@@ -56,53 +57,47 @@ class BaseServer:
 
 class FedServer(BaseServer):
 
-    def __init__(self,
-                 opt,
-                 name: str,
-                 host: str,
-                 port: int):
+    def __init__(self, emp=None, **kwargs):
+        super().__init__(**kwargs)
+        self.emp = emp
 
-        '''
-        :param name:
-        :param host:
-        :param port:
-        :argument data: Int
-        '''
 
-        self.name = name
-        self.host = host
-        self.port = port
-        self.data = 1
-        self.opt = opt
-        self.history = dict()
+    def register(self, client):
+        # value is count
+        if client:
+            self.user[client] += 1
 
-    @property
-    def history(self, new):
-        self.history.update(new)
+    def update_train(self, params):
+        if isinstance(params, dict):
+            # self.history = params
+            self.history.update(params)
+            self.model.load_state_dict(copy.deepcopy(self.history['params']), strict=False)
 
-    @history.getter
-    def history(self):
-        return self.history
+        else:
+            print(f'Type Error: check parmas')
+            self._info['state'] = 'cracked'
+
+
 
     async def run(self):
 
-        model = load_model(OPT)
+        self.model = load_model(self.opt)
 
         loaders, criterion, optimizer, self.history, model_params, device = set_model(
-            model,
-            OPT,
+            self.model,
+            self.opt,
             dpath='../dataset/cifar-10-batches-py', file=3,
             train_size=0.8,
             batch_size=40,
-            testmode=OPT.testmode)
+            testmode=self.opt.testmode)
 
 
-        server = await asyncio.start_server(self.handler, host=SERVER_HOST, port=SERVER_PORT)
+        server = await asyncio.start_server(self.handler, host=self.opt.SERVER_HOST, port=self.opt.SERVER_PORT)
 
         addr = server.sockets[0].getsockname()
 
-        print(f"{'=' * 15}PIPE SERVING ON {addr}{'=' * 15}")
-        print(f"{'*' *5}")
+        print(f"\n{'=' * 15}PIPE SERVING ON {addr}{'=' * 15}\n")
+
 
         async with server:
             await server.serve_forever()
@@ -112,8 +107,11 @@ class FedServer(BaseServer):
 
         hashqueue = defaultdict(asyncio.Queue)
         client = writer.get_extra_info('peername')
+
+        self.register(client)
         print(f'[C: {client}] Conneted')
-        if OPT.testmode:
+
+        if self.opt.testmode:
             print(f'run test mode with dataset size ')
 
         while True:
@@ -121,16 +119,20 @@ class FedServer(BaseServer):
 
             await read_stream(reader, hashqueue[client])
             params: dict = await process_stream(hashqueue[client])
-            self.history = params
 
-            model.load_state_dict(copy.deepcopy(history['params']), strict=False)
-            history['params'] = copy.deepcopy(model.state_dict())
+            self.update_train(params)
 
-            utils.debug.debug_history(history, 'server after read')
+            utils.debug.debug_history(self.history, 'server after read')
 
             await asyncio.sleep(random() * 2)
-            packed = pack_params(history)
+            packed = pack_params(self.history)
             await send_stream(writer, '[S]', packed)
+
+
+
+
+
+
 
 
 
