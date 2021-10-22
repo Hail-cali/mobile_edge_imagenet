@@ -15,7 +15,8 @@ def debug_history(his, where):
     print(his['params'][params_list[-1]].shape)
     print(params_list[-1], his['params'][params_list[-1]][-1])
     print(type(his['params']))
-    print(his['params']['features.0.0.weight'].shape, end='\n')
+    # print(his['params'].keys())
+    # print(his['params']['features.0.0.weight'].shape, end='\n')
 
     print(f"epoch {his['epoch']} | type: {type(his['epoch'])}",end='\n')
     print(f"train {his['train_los']} | type: {type(his['train_los'])}", end='\n')
@@ -48,6 +49,11 @@ def verbose(his, i):
         print(f"val_loss {his['val_los'][-1]}", end=' | ')
         print(f"val_acc {his['val_acc'][-1]}")
 
+def process(iter=None, dm=None):
+    # print('\u250C\u252C\u2510\n\u251C\u253C\u2524\n\u2514\u2534\u2518')
+
+    step = '\u2503'
+    print(f'{step}', end='')
 
 
 def get_latent_layer(model):
