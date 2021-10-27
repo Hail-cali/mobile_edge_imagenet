@@ -1,7 +1,7 @@
-from models.lightmobile import *
-
+from models import lightmobile
+from models import distill
 import torch.optim as optim
-
+import torch.nn as nn
 from utils.data_loader import *
 from utils.epoch_loader import *
 
@@ -10,7 +10,11 @@ import copy
 
 def load_model(opt):
     if opt.model == 'mobilenet':
-        model = LightMobileNet(pretrained=opt.pretrained).load()
+
+        model = lightmobile.LightMobileNet(pretrained=opt.pretrained).load()
+
+    elif opt.model == 'fedavg':
+        model = distill.FedAvg(opt=opt)
 
     else:
         model = None
@@ -83,9 +87,9 @@ def set_model(model, opt, dpath='../dataset/cifar-10-batches-py',file=3, train_s
     best_model_wts = copy.deepcopy(model.state_dict())
     best_loss = 10000.0
 
-    model_params = dict(best_params=best_model_wts, best_loss=best_loss)
+    best_params = dict(best_params=best_model_wts, best_loss=best_loss)
 
-    return (train_loader, val_loader),  criterion, optimizer, history, model_params, device
+    return (train_loader, val_loader),  criterion, optimizer, history, best_params, device
 
 
 def get_history(model, his):

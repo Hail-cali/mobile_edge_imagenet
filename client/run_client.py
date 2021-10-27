@@ -36,6 +36,6 @@ async def multi_client(model):
 if __name__ == '__main__':
 
     model = load_model(OPT)
-
+    # print(model)
     asyncio.run(single(model))
 

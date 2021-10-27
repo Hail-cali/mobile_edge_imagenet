@@ -1,8 +1,12 @@
 from utils.compute_avg import *
 import torch
+import utils.debug
+
+VERBOSE_SIZE = 1
 
 def train_epoch(model, data_loader, criterion, optimizer, epoch, log_interval, device):
     model.train()
+    print('Train start', end=': ')
 
     train_loss = 0.0
     losses = ComputeAvg()
@@ -28,14 +32,19 @@ def train_epoch(model, data_loader, criterion, optimizer, epoch, log_interval, d
                 avg_loss))
             train_loss = 0.0
 
-    print('Train set ({:d} samples): Average loss: {:.4f}\tAcc: {:.4f}%'.format(
-        len(data_loader.dataset), losses.avg, accuracies.avg * 100))
+        if (batch_idx + 1) % VERBOSE_SIZE == 0:
+            utils.debug.process()
+
+
+    print(f"Train Done ({len(data_loader.dataset)}"
+          f" samples): Average loss: {losses.avg:.4f}\t"
+          f"Acc: {(accuracies.avg*100):.4f}%")
 
     return losses.avg, accuracies.avg
 
 def val_epoch(model, data_loader, criterion, device):
     model.eval()
-
+    print(f'val start', end=': ')
     losses = ComputeAvg()
     accuracies = ComputeAvg()
     with torch.no_grad():
@@ -50,7 +59,10 @@ def val_epoch(model, data_loader, criterion, device):
             accuracies.update(acc, data.size(0))
             # print('epoch')
     # show info
-    print(
-        'Validation set ({:d} samples): Average loss: {:.4f}\tAcc: {:.4f}%'.format(len(data_loader.dataset), losses.avg,
-                                                                                   accuracies.avg * 100))
+
+
+    print(f"Validation Done ({len(data_loader.dataset)}"
+          f" samples): Average loss: {losses.avg:.4f}\t"
+          f"Acc: {(accuracies.avg * 100):.4f}%")
+
     return losses.avg, accuracies.avg

@@ -4,11 +4,14 @@ import asyncio
 from random import random
 from models.set_model import *
 from comunicate.request import *
-
+import time
 import utils.debug
 
 # this is for Version compatibility (func wrapper for server side)
 # if need to use wrapper, change mode to True
+
+TIMEOUT = 3000
+
 
 mode = False
 if mode:
@@ -48,7 +51,7 @@ class BaseServer:
 
     async def run(self):
 
-        pass
+        raise NotImplementedError(f'should set run method for fed learning')
 
     async def handler(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
 
@@ -57,30 +60,60 @@ class BaseServer:
 
 class FedServer(BaseServer):
 
-    def __init__(self, emp=None, **kwargs):
+    def __init__(self, user_num=None, **kwargs):
         super().__init__(**kwargs)
-        self.emp = emp
+        self.start: int = user_num
+        self.client_params = defaultdict()
+        self._wait: bool = True
+        self._tolerance: int = 1
+        self._timeout: int = TIMEOUT
+        self._transport_lock = True
 
+    @property
+    def user_size(self):
+        return len(self.user.keys())
+
+    @property
+    def _transport(self):
+        return len(self.client_params.keys())
 
     def register(self, client):
         # value is count
         if client:
             self.user[client] += 1
 
-    def update_train(self, params):
-        if isinstance(params, dict):
-            # self.history = params
+        # debug
+        print(self.user)
+
+    def update_train(self):
+        # must model have method named activate for fed learning
+        print('start update w: fed learning', end=' ')
+        if self.client_params:
+            from models.distill import wrapper_activate
+
+            params = wrapper_activate(**self.client_params)
+
             self.history.update(params)
             self.model.load_state_dict(copy.deepcopy(self.history['params']), strict=False)
 
         else:
-            print(f'Type Error: check parmas')
-            self._info['state'] = 'cracked'
+            print(f'error: update step')
+
+        print(f'->done')
+
+    def check_transport(self):
+        print(f'check transport {self._transport} {self.user_size}')
+        if self._transport == self.user_size:
+            self._wait = False
+        else:
+            self._wait = True
 
 
 
     async def run(self):
 
+
+        # set step
         self.model = load_model(self.opt)
 
         loaders, criterion, optimizer, self.history, model_params, device = set_model(
@@ -91,14 +124,12 @@ class FedServer(BaseServer):
             batch_size=40,
             testmode=self.opt.testmode)
 
-
+        # start server
         server = await asyncio.start_server(self.handler, host=self.opt.SERVER_HOST, port=self.opt.SERVER_PORT)
-
         addr = server.sockets[0].getsockname()
-
         print(f"\n{'=' * 15}PIPE SERVING ON {addr}{'=' * 15}\n")
 
-
+        # create loop
         async with server:
             await server.serve_forever()
 
@@ -106,7 +137,14 @@ class FedServer(BaseServer):
     async def handler(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
 
         hashqueue = defaultdict(asyncio.Queue)
-        client = writer.get_extra_info('peername')
+        client = str(writer.get_extra_info('peername')[1])
+
+        # print('socket',writer.get_extra_info('socket'))
+        # print('socketname', writer.get_extra_info('socketname'))
+        # print(len(client))
+        # print(client[0])
+        # print(client[1])
+        # client = str(client[1])
 
         self.register(client)
         print(f'[C: {client}] Conneted')
@@ -114,19 +152,24 @@ class FedServer(BaseServer):
         if self.opt.testmode:
             print(f'run test mode with dataset size ')
 
-        while True:
-            client = writer.get_extra_info('peername')
+        while self.start <= self.user_size:
+            client = str(writer.get_extra_info('peername')[1])
 
             await read_stream(reader, hashqueue[client])
             params: dict = await process_stream(hashqueue[client])
+            self.client_params[client] = params
 
-            self.update_train(params)
+            self.check_transport()
 
-            utils.debug.debug_history(self.history, 'server after read')
 
-            await asyncio.sleep(random() * 2)
-            packed = pack_params(self.history)
-            await send_stream(writer, '[S]', packed)
+            if not self._wait:
+                self.update_train()
+
+                utils.debug.debug_history(self.history, 'server fed avg done')
+
+                await asyncio.sleep(random() * 2)
+                packed = pack_params(self.history)
+                await send_stream(writer, '[S]', packed)
 
 
 

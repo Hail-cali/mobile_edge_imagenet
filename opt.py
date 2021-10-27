@@ -46,7 +46,7 @@ def parse_opts():
         default='mobilenet',
         type=str,
         help=
-        'mobilenet')
+        'mobilenet | fedavg')
 
     parser.add_argument(
         '--pretrained',
