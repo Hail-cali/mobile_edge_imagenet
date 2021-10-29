@@ -32,6 +32,7 @@ class AsyncClient:
         await asyncio.sleep(1.0)
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
+        print(f'client end')
         pass
 
     async def run_client_model(self, host: str, port: int, opt, model_input):
@@ -59,7 +60,7 @@ class AsyncClient:
         print(f"{'=' * 15}")
 
         opt.start_epoch = epoch = start =0
-        opt.n_epochs = 2
+        opt.n_epochs = -1
 
         while epoch <= opt.n_epochs:
 

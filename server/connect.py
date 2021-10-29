@@ -46,6 +46,7 @@ class BaseServer:
         await asyncio.sleep(1.0)
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
+        print('server end')
         pass
 
 
@@ -68,6 +69,7 @@ class FedServer(BaseServer):
         self._tolerance: int = 1
         self._timeout: int = TIMEOUT
         self._transport_lock = True
+        self.session = None
 
     @property
     def user_size(self):
@@ -84,6 +86,13 @@ class FedServer(BaseServer):
 
         # debug
         print(self.user)
+
+    def logout(self, client):
+        if client is None:
+            self.user.pop(client)
+
+
+
 
     def update_train(self):
         # must model have method named activate for fed learning
@@ -154,7 +163,8 @@ class FedServer(BaseServer):
 
         while self.start <= self.user_size:
             client = str(writer.get_extra_info('peername')[1])
-
+            # self.logout(client)
+            # print(f'temp print client {client}')
             await read_stream(reader, hashqueue[client])
             params: dict = await process_stream(hashqueue[client])
             self.client_params[client] = params

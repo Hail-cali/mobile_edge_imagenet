@@ -20,12 +20,21 @@ def wrapper_activate(*args, **kwargs):
                     except:
                         result[k] = v
 
+                elif k == 'train_los':
+                    try:
+                        result[k] = [pre+post for pre, post in zip(result[k],v)]
+                    except:
+                        result[k] = v
+
     for k, v in result.items():
         if torch.is_tensor(v):
             result[k] = torch.div(v, size)
 
         elif isinstance(v, np.ndarray):
             result[k] = np.divide(v, size)
+
+        elif isinstance(v, list):
+            result[k] = [val/size for val in result[k]]
 
         elif isinstance(v, int):
             result[k] = v / size
@@ -55,7 +64,7 @@ class FedAvg(BaseModel):
         super().__init__(**kwargs)
         self.h = h
         self.out = out
-        self.st = lightmobile.LightMobileNet(pretrained=opt.pretrained).load()
+        self.s = lightmobile.LightMobileNet(pretrained=opt.pretrained).load()
         self.data_path = data_path
 
     def __call__(self, *args, **kwargs):
