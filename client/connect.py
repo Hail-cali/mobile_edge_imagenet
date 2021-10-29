@@ -4,7 +4,7 @@ import asyncio
 
 from models.set_model import *
 from comunicate.request import *
-from utils.make_plot import history_plot
+from utils.make_plot import history_plot, suffix_name, prefix_name, logger
 
 import utils.debug
 
@@ -93,7 +93,10 @@ class AsyncClient:
 
         print(f"[C {self.name}] closing connection")
 
-        history_plot(history, 'test')
+        # save history
+        history_plot(history, prefix_name(term='short')+suffix_name())
+        logger(history, prefix_name()+suffix_name())
+
 
         writer.close()
         await writer.wait_closed()

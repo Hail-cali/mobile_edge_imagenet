@@ -1,7 +1,63 @@
 import matplotlib.pyplot as plt
-# import seaborn as sns
 plt.style.use('seaborn')
-import numpy as np
+
+def prefix_name(term='long'):
+    from datetime import datetime
+    import os
+
+    if term == 'long':
+        done_time =datetime.today().strftime("%Y-%m-%d::%H:%M:%S:%p")
+        name = os.name + '_' + done_time
+    else:
+        done_time = datetime.today().strftime("%m-%d")
+        name = os.name + '_' + done_time
+
+    return name
+
+def suffix_name(option=None):
+
+    def wrap(name):
+        return '(' + name + ')'
+
+    if option is None:
+        from opt import parse_opts
+
+        OPT = parse_opts()
+        return wrap(OPT.model)
+
+    else:
+        return wrap(option.model)
+
+
+def logger(his, name):
+    import os
+    from collections import defaultdict
+    import pickle
+
+    DIR = 'log'
+    DIR_PATH = os.path.join('..', DIR)
+    if DIR not in os.listdir('../'):
+        os.mkdir(DIR_PATH)
+
+    logger = defaultdict()
+
+    try:
+        logger.update({'train_los': his['train_los'],
+                       'val_los': his['val_los'],
+                       'train_acc': his['train_acc'],
+                       'val_acc': his['val_acc']
+                        })
+    except:
+        print(f'Type error: check {his}')
+
+    with open(os.path.join(DIR_PATH, f"{name}.pkl"), 'wb') as f:
+        pickle.dump(logger, f)
+
+    print(f'log saved in {DIR_PATH}/{name}.pkl')
+
+
+
+
 
 def history_plot(his, name):
     """
@@ -71,4 +127,11 @@ def acc_plot(train_acc, val_acc, epoch, name):
 
 
 
+if __name__=='__main__':
+    temp = {'train_los':[1],
+                       'val_los': [0.2],
+                       'train_acc': [0.3],
+                       'val_acc': [0.8]
+                        }
+    logger(temp, prefix_name()+suffix_name())
 
