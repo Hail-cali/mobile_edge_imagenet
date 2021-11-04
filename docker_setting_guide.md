@@ -14,7 +14,7 @@
 - 배포 시에는 최소한의 요건으로만 구성 예정
 - docker는 server와 edge 각각 다른 최적의 이미지로 배포 
 
-### 0)  docker install 
+
 ### 1)  image download
 <pre><code> docker pull matthewfeickert/docker-python3-ubuntu
 </code></pre>
@@ -29,11 +29,20 @@
 <pre><code> docker run -it -p 00000:00 -p 00000:00 --name hail first.hail/ubuntu:20.04
 </code></pre>
 
-### 2-1) docker image start & attach
+### 2-1) gpu setting
+-
+<pre><code> docker run -it -p 00000:00 -p 00000:00 --name hail --gps all first.hail/ubuntu:20.04
+</code></pre>
+
+### 2-2) internet setting
+<pre><code> docker run -it -p 00000:00 -p 00000:00 --name hail --net="host" first.hail/ubuntu:20.04
+</code></pre>
+
+### 3) docker image start & attach
 <pre><code>docker attach hail
 </code></pre>
 
-### 3) ssh 설치 in docker
+### 4) ssh 설치 in docker
 <pre><code>sudo apt update
 sudo apt install openssh-server
 sudo service ssh start
