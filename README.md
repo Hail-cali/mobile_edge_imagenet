@@ -1,4 +1,5 @@
-# mobile edge & CNN model
+# Personalized image net based on Mobile-Edge
+`Frame work for fedearte learning on mobile edge`
 
 ## server
 <pre><code>source server/start.sh
