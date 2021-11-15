@@ -50,12 +50,36 @@ def logger(his, name):
     except:
         print(f'Type error: check {his}')
 
-    with open(os.path.join(DIR_PATH, f"{name}.pkl"), 'wb') as f:
+    with open(os.path.join(DIR_PATH, f"epoch{his['epoch']}_{name}.pkl"), 'wb') as f:
         pickle.dump(logger, f)
 
     print(f'log saved in {DIR_PATH}/{name}.pkl')
 
+def log_best(his, name):
+    import os
+    from collections import defaultdict
+    import pickle
 
+    DIR = 'experiments'
+    DIR_PATH = os.path.join('..', DIR)
+    if DIR not in os.listdir('../'):
+        os.mkdir(DIR_PATH)
+
+    logger = defaultdict()
+
+    try:
+        logger.update({'train_los': his['train_los'],
+                       'val_los': his['val_los'],
+                       'train_acc': his['train_acc'],
+                       'val_acc': his['val_acc']
+                        })
+    except:
+        print(f'Type error: check {his}')
+
+    with open(os.path.join(DIR_PATH, f"best_epoch{his['epoch']}_{name}.pkl"), 'wb') as f:
+        pickle.dump(logger, f)
+
+    print(f"best performance saved in {DIR_PATH}/best_epoch{his['epoch']}_{name}.pkl")
 
 
 

@@ -1,16 +1,16 @@
 # server
 
 import asyncio
+import async_timeout
 from random import random
-from models.set_model import *
+from worker.set import *
 from comunicate.request import *
-import time
 import utils.debug
 
 # this is for Version compatibility (func wrapper for server side)
 # if need to use wrapper, change mode to True
 
-TIMEOUT = 3000
+TIMEOUT = 300
 
 
 mode = False
@@ -32,9 +32,7 @@ class BaseServer:
         self.name = name
         self.host = self.opt.SERVER_HOST
         self.port = self.opt.SERVER_PORT
-
         self.user = defaultdict(int)
-
         self._info: dict = {'state': None, 'terminate': False}
         self.end = f'if '
         self.data = 1
@@ -59,44 +57,79 @@ class BaseServer:
         pass
 
 
+class MultiHeadServer(BaseServer):
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.stored_client = defaultdict()
+        self.sampling = 1
+        self.login = defaultdict()
+        self._tolerance: int = 1
+        self.timeout = self.opt.TIMEOUT
+        self.epoch: int = 0
+
+    @property
+    def stored_status(self):
+        return len(self.stored_client.keys())
+
+    def register(self, client):
+        if client is None:
+            self.login[client] += 1
+            print(f'[{client}] Connected')
+
+    def logout(self, client):
+        if client is None:
+            self.login.pop(client)
+
+    def flush(self):
+        pass
+
+    @property
+    def transport_lock(self):
+
+
+
+        return
+
+
+
 class FedServer(BaseServer):
 
-    def __init__(self, user_num=None, **kwargs):
+    def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.start: int = user_num
         self.client_params = defaultdict()
-        self._wait: bool = True
         self._tolerance: int = 1
-        self._timeout: int = TIMEOUT
-        self._transport_lock = True
-        self.session = None
+        if not self.opt.TIMEOUT:
+            self._timeout: int = TIMEOUT
+        else:
+            self._timeout = self.opt.TIMEOUT
+
+        self.epoch: int = 0
 
     @property
     def user_size(self):
         return len(self.user.keys())
 
     @property
-    def _transport(self):
+    def status(self):
         return len(self.client_params.keys())
 
     def register(self, client):
         # value is count
         if client:
             self.user[client] += 1
-
+            print(f'[{client}] Connected')
         # debug
-        print(self.user)
+        # print(f"registered: {self.user.keys()}")
 
     def logout(self, client):
         if client is None:
             self.user.pop(client)
 
 
-
-
     def update_train(self):
         # must model have method named activate for fed learning
-        print('start update w: fed learning', end=' ')
+        print(f"{'-'*10}\nstart update w: fed learning", end=' ')
         if self.client_params:
             from models.distill import wrapper_activate
 
@@ -104,23 +137,18 @@ class FedServer(BaseServer):
 
             self.history.update(params)
             self.model.load_state_dict(copy.deepcopy(self.history['params']), strict=False)
+            self.epoch += 1
 
         else:
             print(f'error: update step')
 
-        print(f'->done')
+        print(f"->done")
 
-    def check_transport(self):
-        print(f'check transport {self._transport} {self.user_size}')
-        if self._transport == self.user_size:
-            self._wait = False
-        else:
-            self._wait = True
-
-
+    def flush(self):
+        # reset stored params
+        pass
 
     async def run(self):
-
 
         # set step
         self.model = load_model(self.opt)
@@ -128,7 +156,7 @@ class FedServer(BaseServer):
         loaders, criterion, optimizer, self.history, model_params, device = set_model(
             self.model,
             self.opt,
-            dpath='../dataset/cifar-10-batches-py', file=3,
+            dpath='../dataset/cifar-10-batches-py', file=5,
             train_size=0.8,
             batch_size=40,
             testmode=self.opt.testmode)
@@ -142,44 +170,34 @@ class FedServer(BaseServer):
         async with server:
             await server.serve_forever()
 
-
     async def handler(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
 
         hashqueue = defaultdict(asyncio.Queue)
         client = str(writer.get_extra_info('peername')[1])
 
-        # print('socket',writer.get_extra_info('socket'))
-        # print('socketname', writer.get_extra_info('socketname'))
-        # print(len(client))
-        # print(client[0])
-        # print(client[1])
-        # client = str(client[1])
-
         self.register(client)
-        print(f'[C: {client}] Conneted')
 
         if self.opt.testmode:
-            print(f'run test mode with dataset size ')
+            print(f"\n{'-'*20}run test mode with small dataset size{'-'*20}\n")
 
-        while self.start <= self.user_size:
+        while self.epoch <= self.opt.n_epochs:
             client = str(writer.get_extra_info('peername')[1])
-            # self.logout(client)
-            # print(f'temp print client {client}')
-            await read_stream(reader, hashqueue[client])
-            params: dict = await process_stream(hashqueue[client])
+            print('read_stream start')
+            await read_stream(reader, hashqueue[client], recipient='S', giver=client)
+            params: dict = await process_stream(hashqueue[client], tasks='S', given=client)
             self.client_params[client] = params
 
-            self.check_transport()
+            await self.transport(writer, client)
+            # utils.debug.debug_history(self.history, 'server fed avg done')
 
-
-            if not self._wait:
+    async def transport(self, writer, client):
+        print('is transport?')
+        async with async_timeout.timeout(self._timeout):
+            print('here transport')
+            if False:
+                print('transport done ')
                 self.update_train()
-
-                utils.debug.debug_history(self.history, 'server fed avg done')
-
-                await asyncio.sleep(random() * 2)
-                packed = pack_params(self.history)
-                await send_stream(writer, '[S]', packed)
+                await send_stream(writer, self.history, recipient=client, giver='S')
 
 
 
@@ -187,6 +205,8 @@ class FedServer(BaseServer):
 
 
 
+
+    pass
 
 
 
@@ -215,7 +235,7 @@ async def run_pipe():
 
             client = writer.get_extra_info('peername')
 
-            await read_stream(reader, hashqueue[client])
+            await read_stream(reader, '[S]', hashqueue[client])
             params: dict = await process_stream(hashqueue[client])
             history = params
 

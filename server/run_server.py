@@ -16,14 +16,22 @@ OPT = parse_opts()
 async def fedrun():
 
     await asyncio.wait([
-        FedServer(name='server', opt=OPT, user_num=1).run()
+        FedServer(name='server', opt=OPT).run()
+    ])
+
+async def multi_setting():
+
+    await asyncio.wait([
+        FedServer(name='server', opt=OPT).run()
     ])
 
 async def wrapper_for_run():
 
     await asyncio.wait([run_pipe()])
 
+
 if __name__ == '__main__':
 
     # asyncio.run(wrapper_for_run())
-    asyncio.run(fedrun())
+    # asyncio.run(fedrun())
+    asyncio.run(multi_setting())

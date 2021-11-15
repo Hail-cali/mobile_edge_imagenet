@@ -20,9 +20,9 @@ def wrapper_activate(*args, **kwargs):
                     except:
                         result[k] = v
 
-                elif k == 'train_los':
+                elif k in ['train_los', 'val_los', 'train_acc', 'val_acc']:
                     try:
-                        result[k] = [pre+post for pre, post in zip(result[k],v)]
+                        result[k] = [pre+post for pre, post in zip(result[k], v)]
                     except:
                         result[k] = v
 
@@ -68,7 +68,7 @@ class FedAvg(BaseModel):
         self.data_path = data_path
 
     def __call__(self, *args, **kwargs):
-        return self.st(*args, **kwargs)
+        return self.s(*args, **kwargs)
 
     def activate(self, *args, **kwargs):
 
@@ -101,6 +101,10 @@ class FedAvg(BaseModel):
 
         return result
 
+    def end_page(self):
+
+
+        pass
 
 if __name__ == '__main__':
     import opt

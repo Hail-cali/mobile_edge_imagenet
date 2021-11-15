@@ -9,10 +9,41 @@ import utils.debug
 MAX_MSG_SIZE = 5000
 VERBOSE_SIZE = 1000
 
-async def read_stream(reader, user_queue):
+
+class Transport:
+
+    def __init__(self, tasks=None):
+        self.task = tasks
+
+    def phase(self, writer, reader, history, queue, name):
+
+        await send_stream(writer, history, recipient='S', giver=name)
+
+        await read_stream(reader, queue, recipient=name, giver='S')
+
+        rep_his = await process_stream(queue, tasks=name, given='S')
+        his = self.update_history(history, rep_his)
+
+        return his
+
+    @staticmethod
+    def update_history(his, params):
+        history = his
+
+        for k, v in params.items():
+            if k == 'params':
+                history[k].update(v)
+            elif k == 'epoch':
+                history[k] = v
+
+        return history
+
+
+async def read_stream(reader, user_queue, recipient=None, giver=None):
     # read data from stream(reader)
     # write data to pipeline(queue)
-    print(f'read stream {user_queue.qsize()==0}', end=': ')
+    # print(user_queue.qsize() == 0)
+    print(f'[{recipient}] read stream from {giver}', end=': ')
     data: bytes
     i = 0
 
@@ -28,9 +59,9 @@ async def read_stream(reader, user_queue):
         i += 1
     print(f'-> done : queue size({user_queue.qsize()})')
 
-async def process_stream(user_queue):
+async def process_stream(user_queue, tasks=None, given=None):
     # without using send_signal -> msg_size
-    print('process_stream', end=': ')
+    print(f'[{tasks}] process_stream from {given}', end=': ')
     params: bytes = b''
     i = 0
     while not user_queue.empty():
@@ -46,13 +77,17 @@ async def process_stream(user_queue):
     print(f'-> done')
     return result
 
+async def send_stream(writer, params, recipient=None, giver=None):
+    print(f'[{giver}] send stream to {recipient}: ', end=' ')
 
+    packed = pack_params(params)
+    writer.write(packed)
+    await writer.drain()
+    print(f'-> done')
 
+async def stream_decoder(user_queue, tasks=None, given=None):
 
-
-async def stream_decoder(user_queue):
-    # without using send_signal -> msg_size
-    print('stream decoding', end=': ')
+    print(f'[{tasks}] stream decoder from {given}', end=': ')
     params: bytes = b''
     i = 0
     while not user_queue.empty():
@@ -63,17 +98,10 @@ async def stream_decoder(user_queue):
 
     result = unpack_params_torch(params)
 
-    print(f'-> read & process done')
+    print(f'-> done')
     return result
 
 
-
-
-async def send_stream(writer, who, params):
-    print(f'send stream: ', end=' ')
-    writer.write(params)
-    await writer.drain()
-    print(f'-> {who} send stream')
 
 
 class TorchEncoder(json.JSONEncoder):
@@ -127,21 +155,5 @@ def to_torch_params(his):
     return history
 
 
-# def conv_history(his):
-#
-#     if not isinstance(his, dict):
-#         print(f'Not imple error')
-#         return None
-#
-#     his.update({'train_los': _tolist(his['train_los'])})
-#     his.update({'val_los': _tolist(his['val_los'])})
-#     his.update({'train_acc': _tolist(his['train_acc'])})
-#     his.update({'val_acc': _tolist(his['val_acc'])})
-#
-#     return his
-#
-#
-# def _tolist(obj):
-#     return obj.cpu().tolist()
 
 

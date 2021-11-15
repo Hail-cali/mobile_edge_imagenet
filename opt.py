@@ -18,6 +18,9 @@ def parse_opts():
     parser.add_argument('--CLIENT_HOST', type=str,
                         default='127.0.0.1')
 
+    parser.add_argument('--TIMEOUT', type=int,
+                        default=100)
+
     parser.add_argument(
         '--root_path',
         default='/root/data/edge',
@@ -31,7 +34,7 @@ def parse_opts():
 
     parser.add_argument(
         '--log_interval',
-        default=10,
+        default=5,
         type=int,
         help='Log interval for showing training loss')
 
@@ -93,7 +96,7 @@ def parse_opts():
         '--batch_size', default=32, type=int, help='Batch Size')
     parser.add_argument(
         '--n_epochs',
-        default=100,
+        default=3,
         type=int,
         help='Number of total epochs to run')
     parser.add_argument(

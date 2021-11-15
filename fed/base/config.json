@@ -1,0 +1,12 @@
+{
+  "n_epochs": 10,
+  "check_point": 0,
+  "learning_rate": 5e-5,
+
+  "summary_step": 250,
+
+  "logging_steps": 50,
+
+  "save_steps": 250,
+  "output_dir": "../experiments/base_checkpoints"
+}

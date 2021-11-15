@@ -1,17 +1,21 @@
 from utils.compute_avg import *
 import torch
 import utils.debug
+from tqdm import tqdm
+
+# this is old version of frame work, check new version in worker.train
 
 VERBOSE_SIZE = 1
 
 def train_epoch(model, data_loader, criterion, optimizer, epoch, log_interval, device):
     model.train()
-    print('Train start', end=': ')
 
     train_loss = 0.0
     losses = ComputeAvg()
     accuracies = ComputeAvg()
-    for batch_idx, (data, targets) in enumerate(data_loader):
+    batch_idx = 0
+
+    for (data, targets) in tqdm(data_loader, desc='Train ::'):
         data, targets = data.to(device), targets.to(device)
         outputs = model(data)
         loss = criterion(outputs, targets)
@@ -27,13 +31,11 @@ def train_epoch(model, data_loader, criterion, optimizer, epoch, log_interval, d
 
         if (batch_idx + 1) % log_interval == 0:
             avg_loss = train_loss / log_interval
-            print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
-                epoch, (batch_idx + 1) * len(data), len(data_loader.dataset), 100. * (batch_idx + 1) / len(data_loader),
-                avg_loss))
+            print(f' log e[{epoch}]: [{(batch_idx + 1) * len(data)}/{len(data_loader.dataset)} ({((batch_idx + 1)/len(data_loader))*100.0:.0f}%)]\tLoss: {avg_loss:.6f}'
+                )
             train_loss = 0.0
 
-        if (batch_idx + 1) % VERBOSE_SIZE == 0:
-            utils.debug.process()
+        batch_idx += 1
 
 
     print(f"Train Done ({len(data_loader.dataset)}"
@@ -48,7 +50,7 @@ def val_epoch(model, data_loader, criterion, device):
     losses = ComputeAvg()
     accuracies = ComputeAvg()
     with torch.no_grad():
-        for (data, targets) in data_loader:
+        for (data, targets) in tqdm(data_loader, desc='val epoch:: '):
             data, targets = data.to(device), targets.to(device)
             outputs = model(data)
 

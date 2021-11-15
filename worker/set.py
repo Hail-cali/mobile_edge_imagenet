@@ -2,10 +2,60 @@ from models import lightmobile
 from models import distill
 import torch.optim as optim
 import torch.nn as nn
+
 from utils.data_loader import *
 from utils.epoch_loader import *
 
 import copy
+
+
+class Worker:
+
+    def __init__(self, tasks=None):
+
+        self.task = tasks
+
+    def phase(self, model, opt, dpath='../dataset/cifar-10-batches-py', file=3, train_size=0.8, batch_size=40,
+                  testmode=False):
+        history: defaultdict
+        history_params: torch.Tensor
+        history_epoch: int
+        history_train_los: list
+        history_train_acc: list
+        history_train_los: list
+        history_train_acc: list
+
+        device = torch.device(f"cuda:{opt.gpu}" if opt.use_cuda else "cpu")
+        print(f"{'*' * 3} set model.{device}() {'*' * 3}")
+
+        result = unpickle(dpath, file)
+
+        dataset = ImageDataset(data=result, test_mode=testmode)
+
+        train, val = data.random_split(dataset,
+                                       [int(len(dataset) * train_size), len(dataset) - int(len(dataset) * train_size)])
+
+        train_loader = data.DataLoader(train, batch_size=batch_size, shuffle=True)
+
+        val_loader = data.DataLoader(val, batch_size=batch_size, shuffle=True)
+
+        print()
+        # model = LightMobileNet(pretrained=True).load()
+        model.to(device)
+
+        criterion = nn.CrossEntropyLoss()
+        optimizer = optim.Adam(model.parameters(), lr=0.001)
+
+        history = dict(epoch=0, train_los=[], train_acc=[], val_los=[], val_acc=[],
+                       params=copy.deepcopy(model.state_dict()))
+
+        best_model_wts = copy.deepcopy(model.state_dict())
+        best_loss = 10000.0
+
+        best_params = dict(best_params=best_model_wts, best_loss=best_loss)
+
+        return model, (train_loader, val_loader), criterion, optimizer, history, best_params, opt, device
+
 
 
 def load_model(opt):
@@ -22,6 +72,11 @@ def load_model(opt):
 
     return model
 
+
+
+
+
+# old version of set dataset method
 def set_dataset(opt, dpath='../dataset/cifar-10-batches-py',file=5, train_size=0.9, batch_size=40,testmode=False):
 
     '''
@@ -48,6 +103,7 @@ def set_dataset(opt, dpath='../dataset/cifar-10-batches-py',file=5, train_size=0
 
     return train_loader, val_loader
 
+
 def set_model(model, opt, dpath='../dataset/cifar-10-batches-py',file=3, train_size=0.8, batch_size=40, testmode=False):
 
     history: defaultdict
@@ -60,7 +116,6 @@ def set_model(model, opt, dpath='../dataset/cifar-10-batches-py',file=3, train_s
 
 
     device = torch.device(f"cuda:{opt.gpu}" if opt.use_cuda else "cpu")
-    print()
     print(f"{'*'*3} set model.{device}() {'*'*3}")
 
 
@@ -140,20 +195,3 @@ def one_epoch_train(model, loaders, criterion, optimizer, history, model_params,
 #     return history, model_params
 
 
-if __name__=='__main__':
-
-    from opt import parse_opts
-    opt = parse_opts()
-
-    model = load_model(opt)
-
-    loaders, criterion, optimizer, history, model_params, device = set_model(
-        model,
-        opt,
-        dpath='../dataset/cifar-10-batches-py',
-        file=1,
-        train_size=0.8,
-        batch_size=40,
-        testmode=True)
-
-    print()

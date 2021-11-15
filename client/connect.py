@@ -2,21 +2,22 @@
 
 import asyncio
 
-from models.set_model import *
+from worker.set import *
 from comunicate.request import *
 from utils.make_plot import history_plot, suffix_name, prefix_name, logger
 
-import utils.debug
-
 MAX_MSG_SIZE = 8000
 
-class AsyncClient:
+from fed.rule import ReadyPhase, TrainPhase
+
+
+class FedClient:
     def __init__(self,
                  name: str,
                  host: str,
-                 port: int):
+                 port: int,
+                 data: int):
         '''
-
         :param name:
         :param host:
         :param port:
@@ -26,13 +27,120 @@ class AsyncClient:
         self.name = name
         self.host = host
         self.port = port
-        self.data = 1
+        self.data = data
+        print(f'with hugging phase client class used')
+
+    async def run_client_model(self, host: str, port: int, opt, model_input):
+        reader: asyncio.StreamReader #-> In_stream: asyncio.StreamReaderProtocol
+        writer: asyncio.StreamWriter
+        queue: asyncio.Queue
+
+        history: dict
+        model = model_input
+
+        worker = ReadyPhase(worker=None)
+
+        model, loaders, criterion, optimizer, history, model_params, opt, device = worker(model,
+            opt,
+            dpath='../dataset/cifar-10-batches-py',
+            file=self.data,
+            train_size=0.8,
+            batch_size=40,
+            testmode=opt.testmode)
+
+        reader, writer = await asyncio.open_connection(host, port)
+        queue = asyncio.Queue()
+
+        print(f"{'=' * 15}")
+        print(f"[C {self.name}] connected ")
+        print(f"{'=' * 15}")
+
+        opt.start_epoch = epoch = start = 1
+
+        while epoch <= opt.n_epochs:
+
+            if epoch == start:
+                # utils.debug.debug_history(history, f'client {epoch}_start')
+                model.load_state_dict(copy.deepcopy(history['params']), strict=False)
+
+            else:
+                model.load_state_dict(copy.deepcopy(history['params']), strict=False)
+
+            tr = TrainPhase()
+            history = tr(model, loaders, criterion, optimizer,
+                                                    history, model_params, opt, device)
+            model_params = tr.best
+
+
+            # communication step
+
+            await send_stream(writer, history, recipient='S', giver=self.name)
+
+            await read_stream(reader, queue, recipient=self.name, giver='S')
+
+            rep_his = await process_stream(queue, tasks=self.name, given='S')
+            history = self.update_history(history, rep_his)
+
+            # utils.debug.debug_history(history, 'client after read')
+
+            epoch = history['epoch']
+
+            if epoch % opt.log_interval == 0:
+                logger(history, prefix_name(term='short')+suffix_name(opt))
+
+        # end-page
+        await send_stream(writer, history, recipient='S', giver=self.name)
+
+        print(f"[C {self.name}] closing connection")
+
+        # save history
+        history_plot(history, prefix_name(term='short')+suffix_name(opt))
+        logger(history, prefix_name(term='short')+suffix_name(opt))
+
+        writer.close()
+        await writer.wait_closed()
+
+    @staticmethod
+    def update_history(his, params):
+        history = his
+
+        for k, v in params.items():
+            if k == 'params':
+                history[k].update(v)
+            elif k == 'epoch':
+                history[k] = v
+
+        return history
+
+
+
+
+
+class AsyncClient:
+    def __init__(self,
+                 name: str,
+                 host: str,
+                 port: int,
+                 data: int):
+
+        '''
+        :param name:
+        :param host:
+        :param port:
+        :argument data: Int
+        '''
+
+        self.name = name
+        self.host = host
+        self.port = port
+        self.data = data
+        print(f'old version client used')
 
     async def __aenter__(self):
-        await asyncio.sleep(1.0)
+        pass
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
-        print(f'client end')
+
         pass
 
     async def run_client_model(self, host: str, port: int, opt, model_input):
@@ -59,44 +167,65 @@ class AsyncClient:
         print(f"[C {self.name}] connected ")
         print(f"{'=' * 15}")
 
-        opt.start_epoch = epoch = start =0
-        opt.n_epochs = -1
+        opt.start_epoch = epoch = start = 1
+        # opt.n_epochs = 3
 
         while epoch <= opt.n_epochs:
 
             if epoch == start:
-                utils.debug.debug_history(history, f'client {epoch}_start')
+                # utils.debug.debug_history(history, f'client {epoch}_start')
                 model.load_state_dict(copy.deepcopy(history['params']), strict=False)
 
             else:
                 model.load_state_dict(copy.deepcopy(history['params']), strict=False)
-                # model.state_dict().update(history['params'])
 
             # train step
             history, model_params = one_epoch_train(model, loaders, criterion, optimizer,
                                                     history, model_params, opt, device)
 
-            #com step
-            packed = pack_params(history)
 
-            await send_stream(writer, self.name, packed)
+            # communication step
 
-            await read_stream(reader, queue)
-            # params: dict = await process_stream(queue)
-            # history = params
-            history = await process_stream(queue)
+            await send_stream(writer, history, recipient='S', giver=self.name)
 
-            utils.debug.debug_history(history, 'client after read')
+            await read_stream(reader, queue, recipient=self.name, giver='S')
+
+            rep_his = await process_stream(queue, tasks=self.name, given='S')
+            history = self.update_history(history, rep_his)
+
+            # utils.debug.debug_history(history, 'client after read')
 
             epoch = history['epoch']
 
+            if epoch % opt.log_interval == 0:
+                logger(history, prefix_name(term='short')+suffix_name(opt))
+
+        # end-page
+        await send_stream(writer, history, recipient='S', giver=self.name)
 
         print(f"[C {self.name}] closing connection")
 
         # save history
-        history_plot(history, prefix_name(term='short')+suffix_name())
-        logger(history, prefix_name()+suffix_name())
-
+        history_plot(history, prefix_name(term='short')+suffix_name(opt))
+        logger(history, prefix_name(term='short')+suffix_name(opt))
 
         writer.close()
         await writer.wait_closed()
+
+    @staticmethod
+    def update_history(his, params):
+        history = his
+
+        for k, v in params.items():
+            if k == 'params':
+                history[k].update(v)
+            elif k == 'epoch':
+                history[k] = v
+
+        return history
+
+
+
+class DistillClient(AsyncClient):
+
+    pass
