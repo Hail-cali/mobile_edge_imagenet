@@ -40,13 +40,9 @@ class FedClient:
 
         worker = ReadyPhase(worker=None)
 
-        model, loaders, criterion, optimizer, history, model_params, opt, device = worker(model,
-            opt,
-            dpath='../dataset/cifar-10-batches-py',
-            file=self.data,
-            train_size=0.8,
-            batch_size=40,
-            testmode=opt.testmode)
+        model, loaders, criterion, optimizer, history, model_params, opt, device = worker(
+
+            model, opt, file=self.data, testmode=opt.testmode)
 
         reader, writer = await asyncio.open_connection(host, port)
         queue = asyncio.Queue()

@@ -32,13 +32,16 @@
 #         super().__init__()
 import asyncio
 TIMEOUT = 3000
-
+CLOCK = 3000
 
 class BaseStream:
 
     def __init__(self, timeout=TIMEOUT, reader=None, writer=None):
-        self.writer = writer
-        self.reader = reader
+
+        if reader is None:
+            self.writer: asyncio.StreamWriter
+        if writer is None:
+            self.reader: asyncio.StreamReader
         self.timeout = timeout
 
 
@@ -57,7 +60,7 @@ class CopyStream(BaseStream):
     OUT_STREAM
     '''
 
-    def __init__(self,  callback=None, loop=None, *args, **kwargs):
+    def __init__(self,  callback=None, loop=None, clock=CLOCK, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         if callback is None:
@@ -65,47 +68,59 @@ class CopyStream(BaseStream):
         else:
             self._callback = callback
 
+        self.clock = clock
+
         if loop is None:
             self.loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
         else:
             self.loop = loop
 
+    async def _job(self, check):
 
-
-    async def _job(self):
-
-        await self._callback()
-
+        await self._callback(check)
 
     async def cancel(self):
         self._task.cancel()
 
-    async def copy_callback(self):
-        print('copy callback')
-        await asyncio.sleep(self.timeout)
+    async def copy_callback(self, check):
 
-    async def setup(self):
-        self._task = asyncio.ensure_future(self._job())
+        print(f'call back check'
+              f' status: {check}')
+
+        if check:
+            print('copy callback')
+
+
+        else:
+            print('wait for signal')
+
+    async def copy(self, check):
+
+        await asyncio.sleep(self.clock)
+        await self.copy_callback(check)
+
+    async def copy_root(self):
+        while True:
+            await asyncio.sleep(self.clock)
+            self._task = asyncio.ensure_future(self._job(True))
+
 
 
 if __name__ == '__main__':
 
-    # loop = asyncio.new_event_loop()
-    # asyncio.set_event_loop(loop)
+    in_stream = CopyStream(timeout=10, loop=None, clock=5)
+    out_stream = CopyStream(timeout=10, loop=None)
 
-    stream = CopyStream(timeout=10, loop=None)
-    # IN_stream = CopyStream(timeout=10, loop=None)
+
     try:
-        stream.loop.run_until_complete(stream.setup())
-        # loop.run_until_complete(stream.setup())
+        in_stream.loop.run_until_complete(in_stream.copy())
+
         print('hi')
 
     finally:
 
-        stream.loop.run_until_complete(stream.loop.shutdown_asyncgens())
-        stream.loop.close()
+        in_stream.loop.run_until_complete(in_stream.loop.shutdown_asyncgens())
+        in_stream.loop.close()
 
-        # loop.run_until_complete(loop.shutdown_asyncgens())
-        # loop.close()
 

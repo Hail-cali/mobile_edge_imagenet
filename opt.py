@@ -7,7 +7,7 @@ def parse_opts():
                         default='uf101', help='dataset type')
 
     parser.add_argument('--SERVER_PORT', type=int,
-                        default=8080)
+                        default=10022)
 
     parser.add_argument('--SERVER_HOST',type=str,
                         default='127.0.0.1')
@@ -24,6 +24,12 @@ def parse_opts():
     parser.add_argument(
         '--root_path',
         default='/root/data/edge',
+        type=str,
+        help='Root directory path of data')
+
+    parser.add_argument(
+        '--file_path',
+        default='../dataset/cifar-10-batches-py',
         type=str,
         help='Root directory path of data')
 
@@ -94,6 +100,11 @@ def parse_opts():
     )
     parser.add_argument(
         '--batch_size', default=32, type=int, help='Batch Size')
+
+    parser.add_argument(
+        '--train_size', default=0.8, type=float, help='Train Size')
+
+
     parser.add_argument(
         '--n_epochs',
         default=3,
@@ -111,6 +122,7 @@ def parse_opts():
         help='Resume training')
     parser.add_argument(
         '--pretrain_path', default='', type=str, help='Pretrained model (.pth)')
+
     parser.add_argument(
         '--num_workers',
         default=4,

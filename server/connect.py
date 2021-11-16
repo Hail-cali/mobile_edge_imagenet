@@ -5,13 +5,18 @@ import async_timeout
 from random import random
 from worker.set import *
 from comunicate.request import *
+from comunicate.stream import BaseStream, CopyStream
 import utils.debug
+
+
+from fed.rule import ReadyPhase, TrainPhase
+
 
 # this is for Version compatibility (func wrapper for server side)
 # if need to use wrapper, change mode to True
 
 TIMEOUT = 300
-
+CLOCK = 3000
 
 mode = False
 if mode:
@@ -23,19 +28,22 @@ if mode:
 
 class BaseServer:
 
-    def __init__(self,
-                 opt,
-                 name: str,
-                 ):
+    def __init__(self, opt, name: str, copy_stream=None):
 
         self.opt = opt
         self.name = name
         self.host = self.opt.SERVER_HOST
         self.port = self.opt.SERVER_PORT
-        self.user = defaultdict(int)
+
+        self.in_stream = BaseStream()
+
+        if copy_stream is not None:
+            self.out_stream = copy_stream
+        else:
+            self.out_stream = CopyStream(timeout=10, loop=None, clock=5)
+
         self._info: dict = {'state': None, 'terminate': False}
-        self.end = f'if '
-        self.data = 1
+
 
         self.model = None
         self.history = None
@@ -63,34 +71,71 @@ class MultiHeadServer(BaseServer):
         super().__init__(**kwargs)
         self.stored_client = defaultdict()
         self.sampling = 1
-        self.login = defaultdict()
+        self.data = 1
+        self.login = defaultdict(int)
         self._tolerance: int = 1
         self.timeout = self.opt.TIMEOUT
         self.epoch: int = 0
 
     @property
+    def check_copy(self):
+        return (self.stored_status == self.login_status) & (self.stored_status != 0)
+
+    @property
     def stored_status(self):
         return len(self.stored_client.keys())
 
+    @property
+    def login_status(self):
+        return len(self.login.keys())
+
     def register(self, client):
-        if client is None:
+        if client is not None:
             self.login[client] += 1
             print(f'[{client}] Connected')
 
     def logout(self, client):
-        if client is None:
+        if client is not None:
             self.login.pop(client)
 
     def flush(self):
         pass
 
-    @property
-    def transport_lock(self):
+    async def run(self):
 
+       # set step
+       self.model = load_model(self.opt)
 
+       worker = ReadyPhase(worker=None)
 
-        return
+       model, loaders, criterion, optimizer, self.history, model_params, opt, device = worker(
+           self.model, self.opt, file=self.data, testmode=self.opt.testmode)
 
+       server = await asyncio.start_server(self.handler,
+                                           host=self.opt.SERVER_HOST, port=self.opt.SERVER_PORT)
+
+       addr = server.sockets[0].getsockname()
+       print(f"\n{'=' * 15}PIPE SERVING ON {addr}{'=' * 15}\n")
+
+       # create loop
+       async with server:
+           await server.serve_forever()
+    #
+    async def handler(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
+
+        hashqueue = defaultdict(asyncio.Queue)
+        client = str(writer.get_extra_info('peername')[1])
+        print(f'client {client} is connected')
+        self.register(client)
+
+        if self.opt.testmode:
+            print(f"\n{'-'*20}run test mode with small dataset size{'-'*20}\n")
+
+    async def copy_call(self):
+
+        while True:
+
+            await self.out_stream.copy(self.check_copy)
 
 
 class FedServer(BaseServer):
@@ -99,6 +144,7 @@ class FedServer(BaseServer):
         super().__init__(**kwargs)
         self.client_params = defaultdict()
         self._tolerance: int = 1
+        self.user = defaultdict(int)
         if not self.opt.TIMEOUT:
             self._timeout: int = TIMEOUT
         else:

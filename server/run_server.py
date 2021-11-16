@@ -29,9 +29,15 @@ async def wrapper_for_run():
 
     await asyncio.wait([run_pipe()])
 
+async def new():
+    server = MultiHeadServer(name='server', opt=OPT)
+    # copy_server = ''
+    await asyncio.wait([server.run(), server.copy_call()])
+
 
 if __name__ == '__main__':
 
     # asyncio.run(wrapper_for_run())
     # asyncio.run(fedrun())
-    asyncio.run(multi_setting())
+    # asyncio.run(multi_setting())
+    asyncio.run(new())
