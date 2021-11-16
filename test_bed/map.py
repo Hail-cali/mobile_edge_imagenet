@@ -154,7 +154,6 @@ class BaseReader:
     def urls(self, query):
         self._urls = query
 
-
     async def request(self, url=None):
 
         if url is not None:

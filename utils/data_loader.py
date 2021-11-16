@@ -22,7 +22,13 @@ class Config:
     def dict(self):
         return self.__dict__
 
+def open_data(filepath):
+    import pickle
 
+    with open(filepath, 'rb') as fo:
+        result = pickle.load(fo, encoding='bytes')
+
+    return result
 
 def unpickle(file, batch_num):
     import pickle

@@ -15,8 +15,8 @@ class Worker:
 
         self.task = tasks
 
-    def phase(self, model, opt, dpath='../dataset/cifar-10-batches-py', file=3, train_size=0.8, batch_size=40,
-                  testmode=False):
+    def phase(self, model, opt, file=3, testmode=False):
+
         history: defaultdict
         history_params: torch.Tensor
         history_epoch: int
@@ -28,16 +28,17 @@ class Worker:
         device = torch.device(f"cuda:{opt.gpu}" if opt.use_cuda else "cpu")
         print(f"{'*' * 3} set model.{device}() {'*' * 3}")
 
-        result = unpickle(dpath, file)
+        result = unpickle(opt.file_path, file)
+
 
         dataset = ImageDataset(data=result, test_mode=testmode)
 
         train, val = data.random_split(dataset,
-                                       [int(len(dataset) * train_size), len(dataset) - int(len(dataset) * train_size)])
+                                       [int(len(dataset) * opt.train_size), len(dataset) - int(len(dataset) * opt.train_size)])
 
-        train_loader = data.DataLoader(train, batch_size=batch_size, shuffle=True)
+        train_loader = data.DataLoader(train, batch_size=opt.batch_size, shuffle=True)
 
-        val_loader = data.DataLoader(val, batch_size=batch_size, shuffle=True)
+        val_loader = data.DataLoader(val, batch_size=opt.batch_size, shuffle=True)
 
         print()
         # model = LightMobileNet(pretrained=True).load()

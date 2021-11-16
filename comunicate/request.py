@@ -15,7 +15,7 @@ class Transport:
     def __init__(self, tasks=None):
         self.task = tasks
 
-    def phase(self, writer, reader, history, queue, name):
+    async def phase(self, writer, reader, history, queue, name):
 
         await send_stream(writer, history, recipient='S', giver=name)
 
