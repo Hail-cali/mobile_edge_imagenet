@@ -131,9 +131,11 @@ class BaseRule:
 
         self.config = Config(json_path=str('base' + '/config.json'))
 
+
         try:
             if opt is not None:
                 self.config.n_epochs = opt.n_epochs
+
         except:
             print('CONFIG SYNCHRO Error: check config setting')
 
@@ -141,6 +143,15 @@ class BaseRule:
         w = self.setup_phase(x)
         while self.timeline:
             w = self.train_phase(w)
+            w = self.com_phase(w)
+
+        w = self.end_phase(w)
+
+        return w
+
+    def server_loop(self, x):
+        w = self.setup_phase(x)
+        while self.timeline:
             w = self.com_phase(w)
 
         w = self.end_phase(w)
@@ -157,7 +168,6 @@ class BaseRule:
 
     def __repr__(self):
         return f'FED_BASE_RULE FROM {__name__}'
-
 
 
 

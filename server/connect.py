@@ -3,12 +3,13 @@
 import asyncio
 import async_timeout
 from random import random
-from worker.set import *
+from worker.set import load_model
 from comunicate.request import *
 from comunicate.stream import BaseStream, CopyStream
 import utils.debug
 
-
+from collections import defaultdict
+import copy
 from fed.rule import ReadyPhase, TrainPhase
 
 
@@ -28,14 +29,17 @@ if mode:
 
 class BaseServer:
 
-    def __init__(self, opt, name: str, copy_stream=None):
+    def __init__(self, opt, name: str, com_stream=None, copy_stream=None):
 
         self.opt = opt
         self.name = name
         self.host = self.opt.SERVER_HOST
         self.port = self.opt.SERVER_PORT
 
-        self.in_stream = BaseStream()
+        if com_stream is not None:
+            self.in_stream = com_stream
+        else:
+            self.in_stream = BaseStream()
 
         if copy_stream is not None:
             self.out_stream = copy_stream
@@ -43,7 +47,6 @@ class BaseServer:
             self.out_stream = CopyStream(timeout=10, loop=None, clock=5)
 
         self._info: dict = {'state': None, 'terminate': False}
-
 
         self.model = None
         self.history = None
@@ -55,7 +58,6 @@ class BaseServer:
         print('server end')
         pass
 
-
     async def run(self):
 
         raise NotImplementedError(f'should set run method for fed learning')
@@ -64,18 +66,29 @@ class BaseServer:
 
         pass
 
+    async def copy_call(self):
+
+        print(NotImplementedError(f' Need set copy stream, check call back method or loop'))
+
+        pass
+
+    def update_train(self):
+
+        print(f'update train')
+
+
 
 class MultiHeadServer(BaseServer):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.stored_client = defaultdict()
-        self.sampling = 1
-        self.data = 1
         self.login = defaultdict(int)
-        self._tolerance: int = 1
         self.timeout = self.opt.TIMEOUT
-        self.epoch: int = 0
+        self.epoch: int = 0     # start point
+
+        self.data = 1   # test data file
+        # self._tolerance: int = 1
 
     @property
     def check_copy(self):
@@ -103,24 +116,27 @@ class MultiHeadServer(BaseServer):
 
     async def run(self):
 
-       # set step
-       self.model = load_model(self.opt)
+        # set step
+        self.model = load_model(self.opt)
 
-       worker = ReadyPhase(worker=None)
+        worker = ReadyPhase(worker=None)
 
-       model, loaders, criterion, optimizer, self.history, model_params, opt, device = worker(
+        model, loaders, criterion, optimizer, self.history, model_params, opt, device = worker(
            self.model, self.opt, file=self.data, testmode=self.opt.testmode)
 
-       server = await asyncio.start_server(self.handler,
+        server = await asyncio.start_server(self.handler,
                                            host=self.opt.SERVER_HOST, port=self.opt.SERVER_PORT)
 
-       addr = server.sockets[0].getsockname()
-       print(f"\n{'=' * 15}PIPE SERVING ON {addr}{'=' * 15}\n")
+        addr = server.sockets[0].getsockname()
+        print(f"\n{'=' * 15}PIPE SERVING ON {addr}{'=' * 15}\n")
 
-       # create loop
-       async with server:
-           await server.serve_forever()
-    #
+        # create loop
+        async with server:
+
+            await server.serve_forever()
+
+
+
     async def handler(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
 
         hashqueue = defaultdict(asyncio.Queue)
@@ -131,11 +147,18 @@ class MultiHeadServer(BaseServer):
         if self.opt.testmode:
             print(f"\n{'-'*20}run test mode with small dataset size{'-'*20}\n")
 
+
+
     async def copy_call(self):
 
-        while True:
+         while True:
 
             await self.out_stream.copy(self.check_copy)
+
+
+
+
+
 
 
 class FedServer(BaseServer):
@@ -195,7 +218,7 @@ class FedServer(BaseServer):
         pass
 
     async def run(self):
-
+        from worker.set import set_model
         # set step
         self.model = load_model(self.opt)
 
@@ -214,7 +237,9 @@ class FedServer(BaseServer):
 
         # create loop
         async with server:
+            print('start')
             await server.serve_forever()
+            print('end')
 
     async def handler(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
 
@@ -250,15 +275,9 @@ class FedServer(BaseServer):
 
 
 
-
-
-    pass
-
-
-
 # func
-async def run_pipe():
-
+async def old_run():
+    from worker.set import set_model
     model = load_model(OPT)
 
     loaders, criterion, optimizer, history, model_params, device = set_model(

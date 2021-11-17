@@ -7,6 +7,6 @@ sys.path.append(WORKING_DIR_AND_PYTHON_PATHS)
 
 
 from client.connect import *
-from worker.set import load_model
+
 
 

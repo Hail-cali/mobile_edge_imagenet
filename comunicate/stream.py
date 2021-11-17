@@ -44,6 +44,12 @@ class BaseStream:
             self.reader: asyncio.StreamReader
         self.timeout = timeout
 
+        # ref main_server
+        self.main_stream = None
+
+    def set_main_stream(self, main_stream):
+        if main_stream is not None:
+            self.main_stream = main_stream
 
 class ComStream(BaseStream):
 
@@ -83,6 +89,7 @@ class CopyStream(BaseStream):
     async def cancel(self):
         self._task.cancel()
 
+
     async def copy_callback(self, check):
 
         print(f'call back check'
@@ -91,14 +98,16 @@ class CopyStream(BaseStream):
         if check:
             print('copy callback')
 
+            if self.main_stream is not None:
+                self.main_stream.update_train()
 
         else:
             print('wait for signal')
 
     async def copy(self, check):
 
-        await asyncio.sleep(self.clock)
         await self.copy_callback(check)
+        await asyncio.sleep(self.clock)
 
     async def copy_root(self):
         while True:
