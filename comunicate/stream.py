@@ -1,51 +1,21 @@
-# __all__ = (
-#     'StreamReader', 'StreamWriter', 'StreamReaderProtocol',
-#     'open_connection', 'start_server')
-#
-# # it is based on asyncio stream code
-# # add & modified steam & wrapper for edge communication
-# _DEFAULT_LIMIT = 2 ** 16  # 64 KiB
-# import socket
-# import sys
-# import warnings
-# import weakref
-# from asyncio import streams
-#
-# if hasattr(socket, 'AF_UNIX'):
-#     __all__ += ('open_unix_connection', 'start_unix_server')
-#
-# class BaseStream:
-#
-#     _source_traceback = None
-#
-#     def __init__(self, limit=_DEFAULT_LIMIT, loop=None):
-#
-#
-#         if limit <= 0:
-#             raise ValueError('Limit cannot be <=0')
-#         if loop is None:
-#             self._loop = ''
-#
-# class FedStream(streams.StreamReader):
-#
-#     def __init__(self):
-#         super().__init__()
 import asyncio
 TIMEOUT = 3000
-CLOCK = 3000
+CLOCK = 5
 
 class BaseStream:
 
-    def __init__(self, timeout=TIMEOUT, reader=None, writer=None):
+    def __init__(self, timeout=TIMEOUT):
 
-        if reader is None:
-            self.writer: asyncio.StreamWriter
-        if writer is None:
-            self.reader: asyncio.StreamReader
         self.timeout = timeout
-
         # ref main_server
         self.main_stream = None
+
+        if timeout is None:
+            self.timeout = TIMEOUT
+        else:
+            self.timeout = timeout
+
+
 
     def set_main_stream(self, main_stream):
         if main_stream is not None:
@@ -54,11 +24,33 @@ class BaseStream:
 class ComStream(BaseStream):
 
     '''
-    IN_STREAM
+
+    IN_STREAM:: for wrapper class stream for communicate network
+    it is dependent to server's writer & reader
     '''
 
-    pass
+    def __init__(self, reader=None, writer=None, queue=None, *args, **kwargs):
+        super(ComStream, self).__init__()
 
+
+        if reader is None:
+            self.reader: asyncio.StreamReader
+        else:
+            self.reader = reader
+
+        if writer is None:
+            self.writer: asyncio.StreamWriter
+        else:
+            self.writer = writer
+
+        self.queue = queue
+
+        print(f'reader {self.reader}')
+        print(f'writer {self.writer}')
+        print(f'timeout {self.timeout}')
+
+    async def cancel(self):
+        self._task.cancel()
 
 class CopyStream(BaseStream):
 
@@ -74,7 +66,12 @@ class CopyStream(BaseStream):
         else:
             self._callback = callback
 
-        self.clock = clock
+
+        if clock is None:
+            self.clock = CLOCK
+        else:
+            self.clock = clock
+
 
         if loop is None:
             self.loop = asyncio.new_event_loop()
@@ -107,6 +104,7 @@ class CopyStream(BaseStream):
     async def copy(self, check):
 
         await self.copy_callback(check)
+        print(f'{self.clock}')
         await asyncio.sleep(self.clock)
 
     async def copy_root(self):

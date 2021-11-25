@@ -4,7 +4,7 @@
 from utils.data_loader import Config
 from worker.train import BaseTrainer
 from worker.set import Worker
-
+from comunicate.request import Transporter
 '''
 w = model, loaders, criterion, optimizer, history, model_params, opt, device
 '''
@@ -48,10 +48,10 @@ class ReadyPhase:
 
     def __init__(self, worker=None):
         if worker is None:
-            self.task = Worker()
+            self.worker = Worker()
 
     def __call__(self, *args, **kwargs):
-        w = self.task.phase(*args, **kwargs)
+        w = self.worker.phase(*args, **kwargs)
 
         return w
 
@@ -60,32 +60,32 @@ class TrainPhase:
 
     def __init__(self, trainer=None):
         if trainer is None:
-            self.task = BaseTrainer(tasks=None)
+            self.worker = BaseTrainer(tasks=None)
         else:
-            self.task = trainer
+            self.worker = trainer
 
-        self.best = self.task.best
+        self.best = self.worker.best
 
     def __call__(self, *args, **kwargs):
 
-        his, self.best = self.task.phase(*args, **kwargs)
+        his, self.best = self.worker.phase(*args, **kwargs)
 
         return his
 
 
 class CommunicatePhase:
 
-    def __init__(self, transport=None):
+    def __init__(self, streamer, transport=None):
         if transport is None:
-            self.task = None
+            self.worker = Transporter(tasks=None, stream=streamer)
         else:
-            self.task = transport
+            self.worker = transport
 
-        self.best = self.task.best
+        # self.best = self.worker.best
 
-    def __call__(self, *args, **kwargs):
+    async def __call__(self, *args, **kwargs):
 
-        his = self.task.phase(*args, **kwargs)
+        his = await self.worker.phase(*args, **kwargs)
 
         return his
 
@@ -94,15 +94,15 @@ class EndPhase:
 
     def __init__(self, transport=None):
         if transport is None:
-            self.task = None
+            self.worker = None
         else:
-            self.task = transport
+            self.worker= transport
 
-        self.best = self.task.best
+        self.best = self.worker.best
 
     def __call__(self, *args, **kwargs):
 
-        his, self.best = self.task.phase(*args, **kwargs)
+        his, self.best = self.worker.phase(*args, **kwargs)
 
         return his
 

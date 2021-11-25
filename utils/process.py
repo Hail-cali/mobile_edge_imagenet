@@ -8,3 +8,31 @@ def process(iter=None, dm=None):
     print(f'{step}', end='')
 
 
+def pretty_login_ui(name, msg='', *args):
+
+
+    print()
+
+
+def pretty_step_ui(iter, msg='', *args):
+
+    print()
+
+
+def pretty_info_ui(msg=''):
+
+
+    print()
+
+def pretty_train_ui(train_los, val_los, train_acc, val_acc, msg=''):
+
+
+    print()
+
+
+def discription_ui(opt):
+
+    print()
+
+if __name__ == '__main__':
+    pretty_login_ui('server')

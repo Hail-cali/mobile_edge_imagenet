@@ -30,7 +30,6 @@ class Worker:
 
         result = unpickle(opt.file_path, file)
 
-
         dataset = ImageDataset(data=result, test_mode=testmode)
 
         train, val = data.random_split(dataset,
@@ -40,8 +39,6 @@ class Worker:
 
         val_loader = data.DataLoader(val, batch_size=opt.batch_size, shuffle=True)
 
-        print()
-        # model = LightMobileNet(pretrained=True).load()
         model.to(device)
 
         criterion = nn.CrossEntropyLoss()

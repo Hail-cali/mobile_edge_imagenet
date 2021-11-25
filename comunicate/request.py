@@ -10,40 +10,40 @@ MAX_MSG_SIZE = 5000
 VERBOSE_SIZE = 1000
 
 
-class Transport:
+class Transporter:
 
-    def __init__(self, tasks=None):
+    def __init__(self, tasks=None, stream=None):
         self.task = tasks
+        self.stream = stream
 
-    async def phase(self, writer, reader, history, queue, name):
+    async def phase(self, history, name):
 
-        await send_stream(writer, history, recipient='S', giver=name)
+        await send_stream(self.stream.writer, history, recipient='S', giver=name)
+        await read_stream(self.stream.reader, self.stream.queue, recipient=name, giver='S')
+        rep_his = await process_stream(self.stream.queue, tasks=name, given='S')
 
-        await read_stream(reader, queue, recipient=name, giver='S')
+        return rep_his
 
-        rep_his = await process_stream(queue, tasks=name, given='S')
-        his = self.update_history(history, rep_his)
 
-        return his
+class Processor:
 
-    @staticmethod
-    def update_history(his, params):
-        history = his
+    def __init__(self, tasks=None, stream=None):
+        self.task = tasks
+        self.stream = stream
 
-        for k, v in params.items():
-            if k == 'params':
-                history[k].update(v)
-            elif k == 'epoch':
-                history[k] = v
+    async def phase(self, history, name):
+        await read_stream(self.stream.reader, self.stream.queue, recipient='S', giver=name)
 
-        return history
+        await send_stream(self.stream.writer, history, recipient='S', giver=name)
+        rep_his = await process_stream(self.stream.queue, tasks=name, given='S')
 
+        return rep_his
 
 async def read_stream(reader, user_queue, recipient=None, giver=None):
     # read data from stream(reader)
     # write data to pipeline(queue)
     # print(user_queue.qsize() == 0)
-    print(f'[{recipient}] read stream from {giver}', end=': ')
+    print(f'\t[{recipient}] read stream from {giver}', end=': ')
     data: bytes
     i = 0
 
@@ -57,11 +57,12 @@ async def read_stream(reader, user_queue, recipient=None, giver=None):
             # print(packet[-10:])
             break
         i += 1
-    print(f'-> done : queue size({user_queue.qsize()})')
+    print(f' -> done :: [queue ({user_queue.qsize()})]')
+
 
 async def process_stream(user_queue, tasks=None, given=None):
     # without using send_signal -> msg_size
-    print(f'[{tasks}] process_stream from {given}', end=': ')
+    print(f'\t[{tasks}] process_stream from {given}', end=': ')
     params: bytes = b''
     i = 0
     while not user_queue.empty():
@@ -77,17 +78,19 @@ async def process_stream(user_queue, tasks=None, given=None):
     print(f'-> done')
     return result
 
+
 async def send_stream(writer, params, recipient=None, giver=None):
-    print(f'[{giver}] send stream to {recipient}: ', end=' ')
+    print(f'\t[{giver}] send stream to {recipient}: ', end=' ')
 
     packed = pack_params(params)
     writer.write(packed)
     await writer.drain()
-    print(f'-> done')
+    print(f' -> done')
+
 
 async def stream_decoder(user_queue, tasks=None, given=None):
 
-    print(f'[{tasks}] stream decoder from {given}', end=': ')
+    print(f'\t[{tasks}] stream decoder from {given}', end=': ')
     params: bytes = b''
     i = 0
     while not user_queue.empty():
@@ -98,7 +101,7 @@ async def stream_decoder(user_queue, tasks=None, given=None):
 
     result = unpack_params_torch(params)
 
-    print(f'-> done')
+    print(f' -> done')
     return result
 
 

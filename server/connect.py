@@ -5,12 +5,12 @@ import async_timeout
 from random import random
 from worker.set import load_model
 from comunicate.request import *
-from comunicate.stream import BaseStream, CopyStream
+from comunicate.stream import BaseStream, CopyStream, ComStream
 import utils.debug
 
 from collections import defaultdict
 import copy
-from fed.rule import ReadyPhase, TrainPhase
+from fed.rule import ReadyPhase, TrainPhase, CommunicatePhase
 
 
 # this is for Version compatibility (func wrapper for server side)
@@ -39,12 +39,14 @@ class BaseServer:
         if com_stream is not None:
             self.in_stream = com_stream
         else:
-            self.in_stream = BaseStream()
+            # self.in_stream = BaseStream()
+            self.in_stream = None
 
         if copy_stream is not None:
             self.out_stream = copy_stream
         else:
-            self.out_stream = CopyStream(timeout=10, loop=None, clock=5)
+            # if None, set default value check in communicate.stream.CopyStream
+            self.out_stream = CopyStream(timeout=None, loop=None, clock=None)
 
         self._info: dict = {'state': None, 'terminate': False}
 
@@ -92,6 +94,8 @@ class MultiHeadServer(BaseServer):
 
     @property
     def check_copy(self):
+        print(f'stored_status {self.stored_status}')
+        print(f'login_status {self.login_status}')
         return (self.stored_status == self.login_status) & (self.stored_status != 0)
 
     @property
@@ -125,7 +129,7 @@ class MultiHeadServer(BaseServer):
            self.model, self.opt, file=self.data, testmode=self.opt.testmode)
 
         server = await asyncio.start_server(self.handler,
-                                           host=self.opt.SERVER_HOST, port=self.opt.SERVER_PORT)
+                                            host=self.opt.SERVER_HOST, port=self.opt.SERVER_PORT)
 
         addr = server.sockets[0].getsockname()
         print(f"\n{'=' * 15}PIPE SERVING ON {addr}{'=' * 15}\n")
@@ -139,19 +143,27 @@ class MultiHeadServer(BaseServer):
 
     async def handler(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
 
-        hashqueue = defaultdict(asyncio.Queue)
+        # hashqueue = defaultdict(asyncio.Queue)
         client = str(writer.get_extra_info('peername')[1])
         print(f'client {client} is connected')
         self.register(client)
 
         if self.opt.testmode:
-            print(f"\n{'-'*20}run test mode with small dataset size{'-'*20}\n")
+            print(f"\n{'-'*20} run test mode with small dataset size {'-'*20}\n")
+
+        com_stream = ComStream(reader, writer, queue=asyncio.Queue())
+
+        cs = CommunicatePhase(streamer=com_stream, transport=Processor(tasks=None, stream=com_stream))
+
+
+
+        self.logout(client)
 
 
 
     async def copy_call(self):
-
-         while True:
+        print(f'\t\tin copy_call stream')
+        while True:
 
             await self.out_stream.copy(self.check_copy)
 
@@ -173,7 +185,7 @@ class FedServer(BaseServer):
         else:
             self._timeout = self.opt.TIMEOUT
 
-        self.epoch: int = 0
+        self.epoch: int = self.opt.start_epoch
 
     @property
     def user_size(self):
@@ -233,7 +245,7 @@ class FedServer(BaseServer):
         # start server
         server = await asyncio.start_server(self.handler, host=self.opt.SERVER_HOST, port=self.opt.SERVER_PORT)
         addr = server.sockets[0].getsockname()
-        print(f"\n{'=' * 15}PIPE SERVING ON {addr}{'=' * 15}\n")
+        print(f"\n{'=' * 15} PIPE SERVING ON {addr}{'=' * 15}\n")
 
         # create loop
         async with server:
@@ -252,14 +264,19 @@ class FedServer(BaseServer):
             print(f"\n{'-'*20}run test mode with small dataset size{'-'*20}\n")
 
         while self.epoch <= self.opt.n_epochs:
+            print(f'EPOCH: [{self.epoch}/{self.opt.n_epochs}]')
             client = str(writer.get_extra_info('peername')[1])
-            print('read_stream start')
             await read_stream(reader, hashqueue[client], recipient='S', giver=client)
             params: dict = await process_stream(hashqueue[client], tasks='S', given=client)
             self.client_params[client] = params
 
-            await self.transport(writer, client)
+            self.update_train()
+            await send_stream(writer, self.history, recipient=client, giver='S')
+
+
+            # await self.transport(writer, client)
             # utils.debug.debug_history(self.history, 'server fed avg done')
+
 
     async def transport(self, writer, client):
         print('is transport?')

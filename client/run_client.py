@@ -12,7 +12,7 @@ from client import *
 
 OPT = parse_opts()
 
-OPT.CLIENT_PORT = 10022
+# OPT.CLIENT_PORT = 10022
 # CLIENT_HOST = "127.0.0.1"
 
 async def single(model):

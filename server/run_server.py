@@ -23,7 +23,7 @@ async def new():
 
 
 async def fed_run():
-
+    print(f'fed_run--version 1.0')
     await asyncio.wait([
         FedServer(name='server', opt=OPT).run()
     ])
@@ -40,8 +40,12 @@ if __name__ == '__main__':
 
     # # old version for wrapper
     # asyncio.run(wrapper_for_single_run())
+
+
     # # old version for server
     # asyncio.run(fed_run())
+
+
 
     # # server & (copy stream, com stream)
     asyncio.run(new())

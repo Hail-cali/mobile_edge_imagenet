@@ -9,11 +9,11 @@ def parse_opts():
     parser.add_argument('--SERVER_PORT', type=int,
                         default=10022)
 
-    parser.add_argument('--SERVER_HOST',type=str,
+    parser.add_argument('--SERVER_HOST', type=str,
                         default='127.0.0.1')
 
     parser.add_argument('--CLIENT_PORT', type=int,
-                        default=8080)
+                        default=10022)
 
     parser.add_argument('--CLIENT_HOST', type=str,
                         default='127.0.0.1')
@@ -104,12 +104,12 @@ def parse_opts():
     parser.add_argument(
         '--train_size', default=0.8, type=float, help='Train Size')
 
-
     parser.add_argument(
         '--n_epochs',
         default=3,
         type=int,
         help='Number of total epochs to run')
+
     parser.add_argument(
         '--start_epoch',
         default=1,
