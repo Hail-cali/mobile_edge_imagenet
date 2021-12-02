@@ -52,7 +52,7 @@ def parse_opts():
 
     parser.add_argument(
         '--model',
-        default='mobilenet',
+        default='fedavg',
         type=str,
         help=
         'mobilenet | fedavg')

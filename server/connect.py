@@ -116,7 +116,16 @@ class MultiHeadServer(BaseServer):
             self.login.pop(client)
 
     def flush(self):
+        print(f'--flushed')
+        self.stored_client.clear()
         pass
+
+    def update_train(self):
+
+        print(f'update train')
+        
+
+        self.flush()
 
     async def run(self):
 

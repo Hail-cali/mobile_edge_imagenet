@@ -1,6 +1,12 @@
 # Personalized image net based on Mobile-Edge
 `Frame work for fedearte learning on mobile edge`
 
+## frame-work arc
+![frame-work](utils/arc.png?raw=true 'frame_work_low')
+
+## model & federated learning aggregation alg
+
+
 ## server
 <pre><code>source server/start.sh
 </code></pre>
