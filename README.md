@@ -7,11 +7,15 @@
 ## model & federated learning aggregation alg
 
 
-## server
+## how to run
+
+
+
+### Server
 <pre><code>source server/start.sh
 </code></pre>
 
-## client
+### Client
 <pre><code>source client/start.sh
 </code></pre>
 if you cd to client directly, run command
@@ -26,3 +30,17 @@ if you cd to client directly, run command
 
 ### base dataset link
 - [@`cifar-10`](https://www.cs.toronto.edu/~kriz/cifar.html)
+
+
+## Citation
+
+<pre><code>
+@software{pinME,
+  author = {Hail},
+  month = {12},
+  title = {{Frame-work for federate learning}},
+  url = {https://github.com/Hail-cali/pinME},
+  version = {1.2.0},
+  year = {2021}
+}
+</code></pre>

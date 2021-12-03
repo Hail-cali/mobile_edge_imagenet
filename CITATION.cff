@@ -1,0 +1,11 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+- family-names: "Hail"
+  given-names: "cali"
+
+title: "Frame-work for federate learning"
+version: 1.2.0
+
+date-released: 2021-12-01
+url: "https://github.com/Hail-cali/pinME"
