@@ -3,8 +3,8 @@
 import asyncio
 
 from worker.set import *
-from comunicate.request import *
-from comunicate.stream import ComStream
+from communicate.request import *
+from communicate.stream import ComStream
 from utils.make_plot import history_plot, suffix_name, prefix_name, logger
 
 MAX_MSG_SIZE = 8000

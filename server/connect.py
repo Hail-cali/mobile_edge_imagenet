@@ -4,8 +4,8 @@ import asyncio
 import async_timeout
 from random import random
 from worker.set import load_model
-from comunicate.request import *
-from comunicate.stream import BaseStream, CopyStream, ComStream
+from communicate.request import *
+from communicate.stream import BaseStream, CopyStream, ComStream
 import utils.debug
 
 from collections import defaultdict

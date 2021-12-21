@@ -4,7 +4,7 @@
 from utils.data_loader import Config
 from worker.train import BaseTrainer
 from worker.set import Setter, Finisher
-from comunicate.request import Transporter
+from communicate.request import Transporter
 
 
 class ReadyPhase:
