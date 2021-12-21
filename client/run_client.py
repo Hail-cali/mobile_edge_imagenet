@@ -30,8 +30,20 @@ async def multi_client(model):
                     ).run_client_model(OPT.CLIENT_HOST, OPT.CLIENT_PORT, OPT, model),
 
         AsyncClient(name='client_2', host=OPT.CLIENT_HOST, port=OPT.CLIENT_PORT, data=2
-                    ).run_client_model(OPT.CLIENT_HOST, OPT.CLIENT_PORT, OPT, model)
+                    ).run_client_model(OPT.CLIENT_HOST, OPT.CLIENT_PORT, OPT, model),
+
                         ])
+
+async def multi_fed(model):
+    await asyncio.wait([
+        FedClient(name='client_5', host=OPT.CLIENT_HOST, port=OPT.CLIENT_PORT, data=2
+                  ).run_client_model(OPT.CLIENT_HOST, OPT.CLIENT_PORT, OPT, model),
+        FedClient(name='client_6', host=OPT.CLIENT_HOST, port=OPT.CLIENT_PORT, data=3
+                  ).run_client_model(OPT.CLIENT_HOST, OPT.CLIENT_PORT, OPT, model),
+
+
+
+    ])
 
 async def new(model):
 
@@ -47,5 +59,9 @@ if __name__ == '__main__':
 
     # asyncio.run(single(model))
     # asyncio.run(multi_client(model))
+    asyncio.run(multi_fed(model))
+    # asyncio.run(new(model))
 
-    asyncio.run(new(model))
+
+
+
