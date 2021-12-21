@@ -50,10 +50,12 @@ class BaseModel(nn.Module):
         raise NotImplementedError('for edge learning framework, need to set this method')
 
 
-class FedAvg2(BaseModel):
+class ImageNet(BaseModel):
+
+    def __init__(self, *args, **kwargs):
+        super(ImageNet, self).__init__(*args, **kwargs)
 
 
-    pass
 
 
 
@@ -72,10 +74,6 @@ class FedAvg(BaseModel):
 
     def activate(self, *args, **kwargs):
 
-        '''
-        it it base method for frame work training
-        '''
-
         result = defaultdict()
         size = len(kwargs)
 
@@ -89,6 +87,12 @@ class FedAvg(BaseModel):
                     except:
                         result[k] = v
 
+                # elif k in ['train_los', 'val_los', 'train_acc', 'val_acc']:
+                #     try:
+                #         result[k] = [pre + post for pre, post in zip(result[k], v)]
+                #     except:
+                #         result[k] = v
+
         for k, v in result.items():
             if torch.is_tensor(v):
                 result[k] = torch.div(v, size)
@@ -96,15 +100,45 @@ class FedAvg(BaseModel):
             elif isinstance(v, np.ndarray):
                 result[k] = np.divide(v, size)
 
+            elif isinstance(v, list):
+                result[k] = [val / size for val in result[k]]
+
             elif isinstance(v, int):
                 result[k] = v / size
 
         return result
 
-    def end_page(self):
+    # def activate(self, *args, **kwargs):
+    #
+    #     '''
+    #     it it base method for frame work training
+    #     '''
+    #
+    #     result = defaultdict()
+    #     size = len(kwargs)
+    #
+    #     for c, kv in kwargs.items():
+    #
+    #         for k, v in kv.items():
+    #             if k == 'params' or k == 'epoch':
+    #                 try:
+    #                     result[k] += v
+    #
+    #                 except:
+    #                     result[k] = v
+    #
+    #     for k, v in result.items():
+    #         if torch.is_tensor(v):
+    #             result[k] = torch.div(v, size)
+    #
+    #         elif isinstance(v, np.ndarray):
+    #             result[k] = np.divide(v, size)
+    #
+    #         elif isinstance(v, int):
+    #             result[k] = v / size
+    #
+    #     return result
 
-
-        pass
 
 if __name__ == '__main__':
     import opt

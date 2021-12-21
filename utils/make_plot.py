@@ -53,7 +53,7 @@ def logger(his, name):
     with open(os.path.join(DIR_PATH, f"epoch{his['epoch']}_{name}.pkl"), 'wb') as f:
         pickle.dump(logger, f)
 
-    print(f'log saved in {DIR_PATH}/{name}.pkl')
+    print(f"log saved in {DIR_PATH}/epoch{his['epoch']}_{name}.pkl")
 
 def log_best(his, name):
     import os
