@@ -3,52 +3,15 @@
 
 from utils.data_loader import Config
 from worker.train import BaseTrainer
-from worker.set import Worker
+from worker.set import Setter, Finisher
 from comunicate.request import Transporter
-'''
-w = model, loaders, criterion, optimizer, history, model_params, opt, device
-'''
-
-
-
-'''
-while epoch <= opt.n_epochs:
-
-    if epoch == start:
-        # utils.debug.debug_history(history, f'client {epoch}_start')
-        model.load_state_dict(copy.deepcopy(history['params']), strict=False)
-
-    else:
-        model.load_state_dict(copy.deepcopy(history['params']), strict=False)
-
-    # train step
-    history, model_params = one_epoch_train(model, loaders, criterion, optimizer,
-                                            history, model_params, opt, device)
-
-    # communication step
-
-    await send_stream(writer, history, recipient='S', giver=self.name)
-
-    await read_stream(reader, queue, recipient=self.name, giver='S')
-
-    rep_his = await process_stream(queue, tasks=self.name, given='S')
-    history = self.update_history(history, rep_his)
-
-    # utils.debug.debug_history(history, 'client after read')
-
-    epoch = history['epoch']
-
-    if epoch % opt.log_interval == 0:
-        logger(history, prefix_name(term='short') + suffix_name(opt))
-
-'''
 
 
 class ReadyPhase:
 
     def __init__(self, worker=None):
         if worker is None:
-            self.worker = Worker()
+            self.worker = Setter()
 
     def __call__(self, *args, **kwargs):
         w = self.worker.phase(*args, **kwargs)
@@ -83,6 +46,9 @@ class CommunicatePhase:
 
         # self.best = self.worker.best
 
+    def close(self):
+        self.worker.close()
+
     async def __call__(self, *args, **kwargs):
 
         his = await self.worker.phase(*args, **kwargs)
@@ -92,11 +58,11 @@ class CommunicatePhase:
 
 class EndPhase:
 
-    def __init__(self, transport=None):
+    def __init__(self, worker=None, transport=None):
         if transport is None:
             self.worker = None
         else:
-            self.worker= transport
+            self.worker = worker
 
         self.best = self.worker.best
 

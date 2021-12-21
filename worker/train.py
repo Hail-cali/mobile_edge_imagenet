@@ -16,7 +16,6 @@ class BaseTrainer:
 
         his, self.best = self.phase(model, loaders, criterion, optimizer, history, model_params, opt, device)
 
-
         return his
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):

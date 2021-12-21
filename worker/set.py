@@ -9,7 +9,7 @@ from utils.epoch_loader import *
 import copy
 
 
-class Worker:
+class Setter:
 
     def __init__(self, tasks=None):
 
@@ -53,6 +53,17 @@ class Worker:
         best_params = dict(best_params=best_model_wts, best_loss=best_loss)
 
         return model, (train_loader, val_loader), criterion, optimizer, history, best_params, opt, device
+
+
+class Finisher:
+    '''
+
+    Ties up loose ends frame-work
+    '''
+    def __init__(self):
+
+        self.task = None
+
 
 
 
