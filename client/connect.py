@@ -29,7 +29,7 @@ class FedClient:
         self.host = host
         self.port = port
         self.data = data
-        print(f'with hugging phase client class used')
+        print(f'with hugging phase client class ')
 
     async def run_client_model(self, host: str, port: int, opt, model_input):
         reader: asyncio.StreamReader #-> In_stream: asyncio.StreamReaderProtocol
@@ -73,28 +73,22 @@ class FedClient:
                                                     history, model_params, opt, device)
             model_params = tr.best
 
-
-
             # communication step
-            rep_his = await cs(history, self.name)
+            rep_his = await cs(dict((k, v) for k, v in history.items() if k in ['params']), self.name)
 
-            # await send_stream(writer, history, recipient='S', giver=self.name)
-            #
-            # await read_stream(reader, queue, recipient=self.name, giver='S')
-            #
-            # rep_his = await process_stream(queue, tasks=self.name, given='S')
-            print(rep_his)
             history = self.update_history(history, rep_his)
 
             # utils.debug.debug_history(history, 'client after read')
 
-            epoch = history['epoch']
+            history, epoch = self.update_epoch(history)
+
 
             if epoch % opt.log_interval == 0:
                 logger(history, prefix_name(term='short')+suffix_name(opt))
 
-        # end-page
-        await send_stream(writer, history, recipient='S', giver=self.name)
+        # # end-page
+
+        # await send_stream(writer, history, recipient='S', giver=self.name)
 
         print(f"[C {self.name}] closing connection")
 
@@ -102,8 +96,8 @@ class FedClient:
         history_plot(history, prefix_name(term='short')+suffix_name(opt))
         logger(history, prefix_name(term='short')+suffix_name(opt))
 
-        writer.close()
-        await writer.wait_closed()
+        cs.close()
+        # await writer.wait_closed()
 
     @staticmethod
     def update_history(his, params):
@@ -112,11 +106,18 @@ class FedClient:
         for k, v in params.items():
             if k == 'params':
                 history[k].update(v)
-            elif k == 'epoch':
-                history[k] = v + 1
 
         return history
 
+    @staticmethod
+    def update_epoch(history):
+
+        out = history
+
+        if 'epoch' in out.keys():
+            out['epoch'] += 1
+
+        return out, out['epoch']
 
 
 

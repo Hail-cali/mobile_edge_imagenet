@@ -70,33 +70,33 @@ class BaseServer:
 
     async def copy_call(self):
 
-        print(NotImplementedError(f' Need set copy stream, check call back method or loop'))
+        NotImplementedError(f' Need set copy stream, check call back method or loop')
 
         pass
 
     def update_train(self):
 
-        print(f'update train')
-
+        pass
 
 
 class MultiHeadServer(BaseServer):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.stored_client = defaultdict()
+        self.stored_client = defaultdict(defaultdict)
         self.login = defaultdict(int)
         self.timeout = self.opt.TIMEOUT
         self.epoch: int = 0     # start point
-
+        self.k_clients = self.opt.k_clients
         self.data = 1   # test data file
         # self._tolerance: int = 1
+        self.com_streams = defaultdict()
 
     @property
     def check_copy(self):
-        print(f'stored_status {self.stored_status}')
-        print(f'login_status {self.login_status}')
-        return (self.stored_status == self.login_status) & (self.stored_status != 0)
+        print(f'stored/login :: ({self.stored_status}/{self.login_status}) K({self.k_clients})')
+
+        return (self.stored_status == self.k_clients) & (self.stored_status != 0)
 
     @property
     def stored_status(self):
@@ -112,18 +112,18 @@ class MultiHeadServer(BaseServer):
             print(f'[{client}] Connected')
 
     def logout(self, client):
+        print(f'--{client} ::logout')
         if client is not None:
             self.login.pop(client)
 
     def flush(self):
-        print(f'--flushed')
+        print(f'flushed::')
         self.stored_client.clear()
-        pass
 
     def update_train(self):
 
-        print(f'update train')
-        
+        print(f"{'='*5} federate aggregation {'='*5}")
+        self.history = self.model.activate(**self.stored_client)
 
         self.flush()
 
@@ -148,8 +148,6 @@ class MultiHeadServer(BaseServer):
 
             await server.serve_forever()
 
-
-
     async def handler(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter):
 
         # hashqueue = defaultdict(asyncio.Queue)
@@ -162,13 +160,20 @@ class MultiHeadServer(BaseServer):
 
         com_stream = ComStream(reader, writer, queue=asyncio.Queue())
 
+        self.com_streams[client] = copy.copy(com_stream)
+
         cs = CommunicatePhase(streamer=com_stream, transport=Processor(tasks=None, stream=com_stream))
+        epoch = self.opt.start_epoch
 
+        while epoch <= self.opt.n_epochs:
+            # communication step
+            rep_his = await cs(self.name)
 
+            self.stored_client[client].update(rep_his)
+            epoch += 1
 
+        # end phase
         self.logout(client)
-
-
 
     async def copy_call(self):
         print(f'\t\tin copy_call stream')
@@ -176,6 +181,11 @@ class MultiHeadServer(BaseServer):
 
             await self.out_stream.copy(self.check_copy)
 
+    async def deploy_params(self):
+        print(f'deploy params')
+        for c, stream in self.com_streams.items():
+
+            await send_stream(stream.writer, self.history, recipient=c, giver='S')
 
 
 

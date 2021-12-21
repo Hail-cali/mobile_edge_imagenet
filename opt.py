@@ -7,16 +7,16 @@ def parse_opts():
                         default='uf101', help='dataset type')
 
     parser.add_argument('--SERVER_PORT', type=int,
-                        default=10022)
+                        default=59919)
 
     parser.add_argument('--SERVER_HOST', type=str,
-                        default='127.0.0.1')
+                        default='127.0.0.2')
 
     parser.add_argument('--CLIENT_PORT', type=int,
-                        default=10022)
+                        default=59919)
 
     parser.add_argument('--CLIENT_HOST', type=str,
-                        default='127.0.0.1')
+                        default='127.0.0.2')
 
     parser.add_argument('--TIMEOUT', type=int,
                         default=100)
@@ -106,7 +106,7 @@ def parse_opts():
 
     parser.add_argument(
         '--n_epochs',
-        default=3,
+        default=1,
         type=int,
         help='Number of total epochs to run')
 
@@ -122,6 +122,12 @@ def parse_opts():
         help='Resume training')
     parser.add_argument(
         '--pretrain_path', default='', type=str, help='Pretrained model (.pth)')
+
+    parser.add_argument(
+        '--k_clients',
+        default=2,
+        type=int,
+        help='Number of Client')
 
     parser.add_argument(
         '--num_workers',
