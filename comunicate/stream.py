@@ -1,6 +1,7 @@
 import asyncio
 TIMEOUT = 3000
-CLOCK = 5
+CLOCK = 100
+
 
 class BaseStream:
 
@@ -15,11 +16,10 @@ class BaseStream:
         else:
             self.timeout = timeout
 
-
-
     def set_main_stream(self, main_stream):
         if main_stream is not None:
             self.main_stream = main_stream
+
 
 class ComStream(BaseStream):
 
@@ -29,7 +29,7 @@ class ComStream(BaseStream):
     it is dependent to server's writer & reader
     '''
 
-    def __init__(self, reader=None, writer=None, queue=None, *args, **kwargs):
+    def __init__(self, reader=None, writer=None, queue=None, verbose=False, *args, **kwargs):
         super(ComStream, self).__init__()
 
 
@@ -44,13 +44,16 @@ class ComStream(BaseStream):
             self.writer = writer
 
         self.queue = queue
+        self.verbose = verbose
 
-        print(f'reader {self.reader}')
-        print(f'writer {self.writer}')
-        print(f'timeout {self.timeout}')
+        if self.verbose:
+            print(f'reader {self.reader}')
+            print(f'writer {self.writer}')
+            print(f'timeout {self.timeout}')
 
     async def cancel(self):
         self._task.cancel()
+
 
 class CopyStream(BaseStream):
 
@@ -86,25 +89,26 @@ class CopyStream(BaseStream):
     async def cancel(self):
         self._task.cancel()
 
-
     async def copy_callback(self, check):
 
-        print(f'call back check'
-              f' status: {check}')
+        print(f'call back status: {check}')
 
         if check:
             print('copy callback')
 
             if self.main_stream is not None:
                 self.main_stream.update_train()
+                await self.main_stream.deploy_params()
+
+
 
         else:
-            print('wait for signal')
+            pass
 
     async def copy(self, check):
 
         await self.copy_callback(check)
-        print(f'{self.clock}')
+
         await asyncio.sleep(self.clock)
 
     async def copy_root(self):

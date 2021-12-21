@@ -16,6 +16,10 @@ class Transporter:
         self.task = tasks
         self.stream = stream
 
+    def close(self):
+        self.stream.writer.close()
+        # self.stream.reader.close()
+
     async def phase(self, history, name):
 
         await send_stream(self.stream.writer, history, recipient='S', giver=name)
@@ -31,13 +35,32 @@ class Processor:
         self.task = tasks
         self.stream = stream
 
-    async def phase(self, history, name):
+    def close(self):
+        self.stream.writer.close()
+
+    async def phase(self, name):
         await read_stream(self.stream.reader, self.stream.queue, recipient='S', giver=name)
 
-        await send_stream(self.stream.writer, history, recipient='S', giver=name)
-        rep_his = await process_stream(self.stream.queue, tasks=name, given='S')
+        rep_his = await process_stream(self.stream.queue, tasks='S', given=name)
 
         return rep_his
+
+
+class Deployer:
+
+    def __init__(self, tasks=None, stream=None):
+        self.task = tasks
+        self.stream = stream
+
+    def close(self):
+        self.stream.writer.close()
+
+    async def phase(self, history, name):
+
+        await send_stream(self.stream.writer, history, recipient=name, giver='S')
+
+        return
+
 
 async def read_stream(reader, user_queue, recipient=None, giver=None):
     # read data from stream(reader)
