@@ -1,5 +1,6 @@
 # Personalized image net based on Mobile-Edge
 ## `Frame work for fedearte learning on mobile edge`
+![frame-work_fed](utils/fed_ac_resized.png?raw=true 'federate_learning')
 
 ## frame-work arc
 ![frame-work](utils/arc.png?raw=true 'frame_work_low')
