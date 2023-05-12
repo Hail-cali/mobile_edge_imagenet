@@ -25,12 +25,14 @@ class Setter:
         history_train_los: list
         history_train_acc: list
 
-        device = torch.device(f"cuda:{opt.gpu}" if opt.use_cuda else "cpu")
+        device = torch.device(f"cuda:{opt.gpu}" if torch.cuda.is_available() else "cpu")
         print(f"{'*' * 3} set model.{device}() {'*' * 3}")
 
+        # ----------------- need to set custom dataset
         result = unpickle(opt.file_path, file)
 
         dataset = ImageDataset(data=result, test_mode=testmode)
+        # -----------------
 
         train, val = data.random_split(dataset,
                                        [int(len(dataset) * opt.train_size), len(dataset) - int(len(dataset) * opt.train_size)])
@@ -55,16 +57,43 @@ class Setter:
         return model, (train_loader, val_loader), criterion, optimizer, history, best_params, opt, device
 
 
-class Finisher:
-    '''
+class CustomSetter(Setter):
 
-    Ties up loose ends frame-work
-    '''
-    def __init__(self):
+    def phase(self, model, custom_dataset, opt):
+        history: defaultdict
+        history_params: torch.Tensor
+        history_epoch: int
+        history_train_los: list
+        history_train_acc: list
+        history_train_los: list
+        history_train_acc: list
 
-        self.task = None
+        device = torch.device(f"cuda:{opt.gpu}" if torch.cuda.is_available() else "cpu")
+        print(f"{'*' * 3} set model.{device}() {'*' * 3}")
+        dataset = custom_dataset
 
+        train, val = data.random_split(dataset,
+                                       [int(len(dataset) * opt.train_size),
+                                        len(dataset) - int(len(dataset) * opt.train_size)])
 
+        train_loader = data.DataLoader(train, batch_size=opt.batch_size, shuffle=True)
+
+        val_loader = data.DataLoader(val, batch_size=opt.batch_size, shuffle=True)
+
+        model.to(device)
+
+        criterion = nn.CrossEntropyLoss()
+        optimizer = optim.Adam(model.parameters(), lr=0.001)
+
+        history = dict(epoch=0, train_los=[], train_acc=[], val_los=[], val_acc=[],
+                       params=copy.deepcopy(model.state_dict()))
+
+        best_model_wts = copy.deepcopy(model.state_dict())
+        best_loss = 10000.0
+
+        best_params = dict(best_params=best_model_wts, best_loss=best_loss)
+
+        return model, (train_loader, val_loader), criterion, optimizer, history, best_params, opt, device
 
 
 def load_model(opt):
@@ -82,8 +111,14 @@ def load_model(opt):
     return model
 
 
+def load_dataset(opt):
+    if opt.dataset == 'csv':
 
+        dataset = CustomDataset(opt.file_path)
 
+    elif opt.dataset == 'image':
+
+        dataset = ImageDataset()
 
 # old version of set dataset method
 def set_dataset(opt, dpath='../dataset/cifar-10-batches-py',file=5, train_size=0.9, batch_size=40,testmode=False):

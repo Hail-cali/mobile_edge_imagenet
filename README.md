@@ -15,18 +15,49 @@
 
 
 - ### Server
+- DEV 
+- new docker container init
+- will be added with new dockerfile
+- dockerfile-build
+```shell
+docker build -t hail/pinme/server:1.5 server/
+```
+### IMPORTANT !! YOU SHOULD DUMP CONTAINER WITH SECRET  
+- dump sectet
+```shell
+docker commit --change "ENV SERVER_POT=0000"
+```
+
+- dockerfile -run
+```shell
+docker run -d --name pinme.server hail/pinme/server:1.5
+```
+- shell
 ```shell
 source server/start.sh
 ```
+- python directly
 ```shell
-python run_server.py python  --SERVER_PORT 59919 --SERVER_HOST '127.0.0.2' --model fedavg --k_clients 1
+python run_server.py  --SERVER_PORT 59919 --SERVER_HOST '127.0.0.2' --model fedavg --k_clients 1
 ```
 
 
 - ### Client
+- new dockerfile 
+```shell
+docker build -t hail/pinme/client:1.5 client/
+```
+
+
+- dockerfile -run
+```shell
+docker run -d --name pinme.client1 hail/pinme/client:1.5 
+```
+- shell
 ```shell
 source clinet/start.sh
 ```
+- python cmd
 ```shell
 python run_client.py --CLIENT_PORT 59919 --CLIENT_HOST '127.0.0.2' --model fedavg --n_epochs 1 --gpu 0
 ```

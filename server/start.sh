@@ -1,6 +1,6 @@
 
 #local
-python run_server.py --SERVER_PORT 59998 --SERVER_HOST '127.0.0.1' --model fedavg --k_clients 1
+python run_server.py --SERVER_PORT 59998 --SERVER_HOST '127.0.0.1' --model fedavg --k_clients 1 --n_epochs 1
 
 
 

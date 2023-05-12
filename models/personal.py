@@ -14,9 +14,9 @@ def conv1x1(in_planes: int, out_planes: int, stride: int =1) -> nn.Conv2d:
 
 class PinBlock(nn.Module):
 
-    def __init__(self):
+    def __init__(self, inplanes):
         super().__init__()
-        self.conv2d = None
+        self.conv1 = conv3x3()
 
 
 class PinEncoder(nn.Module):

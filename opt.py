@@ -27,6 +27,11 @@ def parse_opts():
         type=str,
         help='Root directory path of data')
 
+
+
+
+
+
     parser.add_argument(
         '--file_path',
         default='../dataset/cifar-10-batches-py',

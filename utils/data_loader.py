@@ -48,6 +48,27 @@ def unmat(file):
     mat_file = io.loadmat(file)
     return mat_file
 
+
+class CustomDataset(data.Dataset):
+
+    def __init__(self, data_path):
+        super(CustomDataset, self).__init__()
+
+        import pandas as pd
+        data = pd.read_csv(data_path)
+
+        self.X, self.y = self.make_dataset(data)
+
+    def make_dataset(self, dict):
+        return dict[b'data'].reshape(len(dict[b'data']), 3, 32, 32).astype('float32'), np.array(dict[b'labels'])
+
+    def __getitem__(self, index):
+        return self.X[index], self.y[index]
+
+    def __len__(self):
+        return len(self.X)
+
+
 class ImageDataset(data.Dataset):
 
     def __init__(self, data, test_mode=False):
@@ -69,14 +90,3 @@ class ImageDataset(data.Dataset):
 
     def __len__(self):
         return len(self.X)
-
-class DataLoader(object):
-
-    def __init__(self):
-        pass
-
-    def make_mini_batch(self, mini):
-
-
-
-        return
