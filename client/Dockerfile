@@ -9,11 +9,11 @@ COPY ../ /app
 RUN  pip install --upgrade pip==22.0.4 \
      && pip install -r requirements.txt \
 
-ENV SERVER_PORT=88 \
-    SERVER_HOST=000.0.0.0 \
+ENV CLIENT_PORT=88 \
+    CLIENT_HOST=000.0.0.0 \
+    model=fedavg
 
-
-CMD python server/run_server.py --SERVER_PORT ${SERVER_PORT} --SERVER_HOST ${SERVER_HOST} --model ${model} --k_clients ${k_clients} --n_epochs ${epoch}
+CMD python client/run_server.py --CLIENT_PORT ${CLIENT_PORT} --CLIENT_HOST ${CLIENT_HOST} --model ${model}
 
 
 
