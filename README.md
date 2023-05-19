@@ -6,63 +6,32 @@
 ![frame-work](utils/arc.png?raw=true 'frame_work_low')
 
 ****
+## how to build (Docker)
 
-## how to run
-> check port forwarding first
-> 
-> 1. run server :: preset epoch, client_k which you want aggregate some
-> 2. run client :: preset epoch same as server, gpu num which you want to put in (if can't, switched to cpu )
-
-
-- ### Server
-- DEV 
-- new docker container init
-- will be added with new dockerfile
-- dockerfile-build
+## Server-docker
 ```shell
-docker build -t hail/pinme/server:1.5 server/
+docker build -t hail.pinme.server:1.5 ./server/
 ```
-### IMPORTANT !! YOU SHOULD DUMP CONTAINER WITH SECRET  
-- dump sectet
+## Client-docker
 ```shell
-docker commit --change "ENV SERVER_POT=0000"
-```
-
-- dockerfile -run
-```shell
-docker run -d --name pinme.server hail/pinme/server:1.5
-```
-- shell
-```shell
-source server/start.sh
-```
-- python directly
-```shell
-python run_server.py  --SERVER_PORT 59919 --SERVER_HOST '127.0.0.2' --model fedavg --k_clients 1
+docker build -t hail.pinme.client:1.5 ./client/
 ```
 
 
-- ### Client
-- new dockerfile 
-```shell
-docker build -t hail/pinme/client:1.5 client/
-```
+## How to run
 
-
-- dockerfile -run
+### IMPORTANT !! YOU SHOULD DUMP CONTAINER WITH SECRET
+## Server run docker
 ```shell
-docker run -d --name pinme.client1 hail/pinme/client:1.5 
+docker run -d -e k_clients=5 -e SERVER_PORT=8888 -e SERVER_HOST=111.11.11.1 --name pinme.server hail/pinme.server:1.5
 ```
-- shell
+## Client Run docker
 ```shell
-source clinet/start.sh
+docker run -it -e model=fedavg -e n_epochs=10  -e CLIENT_PORT=8888 -e CLIENT_HOST=111.11.11.1 --name pinme.server hail/pinme.client:1.5 
 ```
-- python cmd
-```shell
-python run_client.py --CLIENT_PORT 59919 --CLIENT_HOST '127.0.0.2' --model fedavg --n_epochs 1 --gpu 0
-```
-
-- if you want to use server & edge, not locally, then set server's port & host to fit in docker forwarding setting
+## DO NOT COMMIT RUNNING CONTAINER, IT Cause dumped your secret  into docker image layer
+- if you want to commit your container and want to be guaranteed, then change port and host when run newly commited image
+- 
 
 ****
 ### baseline docker image link

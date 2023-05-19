@@ -11,7 +11,9 @@ RUN  pip install --upgrade pip==22.0.4 \
 
 ENV CLIENT_PORT=88 \
     CLIENT_HOST=000.0.0.0 \
-    model=fedavg
+    model=fedavg \
+    k_clients=4 \
+    n_epochs=10
 
 CMD python client/run_server.py --CLIENT_PORT ${CLIENT_PORT} --CLIENT_HOST ${CLIENT_HOST} --model ${model}
 
